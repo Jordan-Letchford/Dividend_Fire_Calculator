@@ -4,6 +4,10 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Dividend &amp; FIRE Planner</title>
+    
+<!-- Link to your favicon icon -->
+<link rel="icon" type="image/png" href="icon.png">
+
 <style>
   :root{
     --bg:#0B131B; --panel:#131E28; --panel2:#0F1720; --border:#26333F;
@@ -32,6 +36,15 @@
   .disclaimer{font-size:11px;color:var(--dim);max-width:260px;text-align:right;}
   .privacy{background:#101B14;border:1px solid #2A4A33;border-radius:8px;padding:10px 14px;font-size:12px;color:#9FCBAE;margin-bottom:14px;}
   .privacy b{color:#B8DFC3;}
+  .support{background:#131E28;border:1px solid #26333F;border-radius:10px;padding:14px 16px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;}
+  .support .stext{font-size:12px;color:#8593A3;max-width:520px;line-height:1.5;}
+  .support .stext b{color:#EAF1F6;}
+  .support .sbuttons{display:flex;gap:8px;flex-wrap:wrap;}
+  .support a.sbtn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:8px;font-size:12.5px;text-decoration:none;border:1px solid #26333F;transition:.15s;}
+  .support a.sbtn.kofi{border-color:#D9A441;color:#D9A441;}
+  .support a.sbtn.kofi:hover{background:rgba(217,164,65,.1);}
+  .support a.sbtn.pearler{border-color:#4FC3D9;color:#4FC3D9;}
+  .support a.sbtn.pearler:hover{background:rgba(79,195,217,.1);}
   .settingsbar{position:sticky;top:0;z-index:20;background:#0E1620;border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:14px;}
   .settingsbar .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;}
   .settingsbar .row2{display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-top:10px;font-size:12px;color:var(--muted);}
@@ -967,7 +980,8 @@ function render(){
     '<h1 class="title">Portfolio Retirement Readout</h1>'+
     '<div class="sub">A planning and education tool for reaching a target dividend income: growth, tax and CGT included. Add what you hold, set your plan, and everything updates.</div></div>'+
     '<div class="disclaimer">Planning &amp; education tool, not financial, tax or legal advice. Yield, growth and tax figures are assumptions and simplifications, not guarantees.</div></header>';
-  html+='<div class="privacy"><b>Runs entirely on your device.</b> No server, login or database. Nothing you type is stored or sent anywhere. Close the tab and it\'s gone unless you save your own copy of this file.</div>';
+  html+='<div class="privacy">"I built this for my own FIRE planning and figured others might find it useful. <b>It\'s free, runs entirely in your browser, nothing you enter is stored or sent anywhere, no server, no database.</b> Close the tab and it\'s gone unless you save your own copy of this file. This calculator is for general information, not financial advice, check with an accountant before making any decisions."</div>';
+  html+='<div class="support"><div class="stext">Built and shared for free by a fellow FIRE-chaser. If it saved you some spreadsheet time, feel free to <b>buy me a coffee</b>, totally optional. I also use <b>Pearler</b> for my own ETF buys - if you are after a broker, the link below is a referral (we both get a small bonus if you sign up through it, disclosed because that is the honest way to do it).</div><div class="sbuttons"><a class="sbtn kofi" href="https://ko-fi.com/jordanscruffy" target="_blank" rel="noopener noreferrer">☕ Buy me a coffee</a><a class="sbtn pearler" href="https://mobile.pearler.com/invited/JORDAN63178" target="_blank" rel="noopener noreferrer">📈 Try Pearler (referral)</a></div></div>';
   html+=renderSettingsBar();
   html+=renderNav();
   html+='<div id="tabcontent"></div>';
