@@ -1,0 +1,1007 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Dividend &amp; FIRE Planner</title>
+<style>
+  :root{
+    --bg:#0B131B; --panel:#131E28; --panel2:#0F1720; --border:#26333F;
+    --text:#EAF1F6; --muted:#8593A3; --dim:#5B6A78;
+    --cyan:#4FC3D9; --gold:#D9A441; --green:#6FBE8F; --red:#D9695F; --purple:#B48FD9;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;line-height:1.45;}
+  h1,h2,h3{font-family:'Segoe UI',system-ui,sans-serif;margin:0;}
+  input[type=number], input[type=text]{background:var(--panel2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 8px;font-family:'Courier New',monospace;font-size:13px;width:100%;}
+  input[type=number]:focus, input[type=text]:focus{outline:none;border-color:var(--cyan);}
+  input[type=range]{width:100%;}
+  label.field{display:flex;flex-direction:column;gap:4px;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;}
+  button{cursor:pointer;font-family:inherit;}
+  .btn{background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:6px 12px;font-size:12px;transition:.15s;}
+  .btn:hover{border-color:var(--cyan);color:var(--cyan);}
+  .btn.primary{border-color:var(--cyan);color:var(--cyan);}
+  .btn.primary:hover{background:rgba(79,195,217,.1);}
+  .btn.danger:hover{border-color:var(--red);color:var(--red);}
+  .btn.small{padding:3px 8px;font-size:11px;}
+  .wrap{max-width:1180px;margin:0 auto;padding:16px;}
+  header.top{border-bottom:1px solid var(--border);padding-bottom:14px;margin-bottom:14px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+  .eyebrow{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--cyan);margin-bottom:4px;}
+  h1.title{font-size:24px;font-weight:600;}
+  .sub{font-size:12.5px;color:var(--muted);max-width:620px;margin-top:6px;}
+  .disclaimer{font-size:11px;color:var(--dim);max-width:260px;text-align:right;}
+  .privacy{background:#101B14;border:1px solid #2A4A33;border-radius:8px;padding:10px 14px;font-size:12px;color:#9FCBAE;margin-bottom:14px;}
+  .privacy b{color:#B8DFC3;}
+  .settingsbar{position:sticky;top:0;z-index:20;background:#0E1620;border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:14px;}
+  .settingsbar .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;}
+  .settingsbar .row2{display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-top:10px;font-size:12px;color:var(--muted);}
+  nav.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;}
+  nav.tabs button{background:var(--panel);border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:8px 14px;font-size:12.5px;}
+  nav.tabs button.active{border-color:var(--cyan);color:var(--cyan);background:rgba(79,195,217,.08);}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:14px;}
+  .card h2{font-size:14px;font-weight:600;display:flex;align-items:center;gap:8px;}
+  .card .cardsub{font-size:12px;color:var(--muted);margin:6px 0 12px 0;line-height:1.5;}
+  .help{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;border:1px solid var(--dim);color:var(--dim);font-size:10px;cursor:pointer;flex-shrink:0;}
+  .help:hover{border-color:var(--cyan);color:var(--cyan);}
+  .helpbox{display:none;background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:11.5px;color:var(--muted);margin:8px 0;line-height:1.5;}
+  .helpbox.open{display:block;}
+  table{width:100%;border-collapse:collapse;font-size:12px;}
+  th{text-align:left;color:var(--muted);font-weight:500;border-bottom:1px solid var(--border);padding:6px 8px 6px 0;font-size:11px;text-transform:uppercase;letter-spacing:.02em;}
+  td{padding:6px 8px 6px 0;border-bottom:1px solid #1E2A35;vertical-align:top;}
+  .grid4{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;}
+  .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;}
+  .grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;}
+  .readout{background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:12px;}
+  .readout .lbl{font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:4px;}
+  .readout .val{font-family:'Courier New',monospace;font-size:20px;font-weight:600;}
+  .readout .sub{font-size:11px;color:var(--dim);margin-top:2px;}
+  .chip{display:inline-flex;align-items:center;gap:5px;padding:4px 9px;border-radius:20px;font-size:11px;font-family:'Courier New',monospace;border:1px solid var(--border);color:var(--muted);}
+  .dot{width:8px;height:8px;border-radius:50%;display:inline-block;}
+  .tag{display:inline-flex;align-items:center;gap:6px;background:var(--panel2);border:1px solid var(--border);border-radius:6px;padding:3px 8px;font-size:11px;font-family:'Courier New',monospace;}
+  .tag button{background:none;border:none;color:var(--dim);cursor:pointer;font-size:12px;padding:0;}
+  .tag button:hover{color:var(--red);}
+  .pill-toggle{display:flex;gap:4px;}
+  .pill-toggle button{background:var(--panel2);border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:5px 10px;font-size:11px;}
+  .pill-toggle button.active{background:var(--cyan);color:#0B131B;border-color:var(--cyan);}
+  .insight{position:relative;padding-left:26px;margin-bottom:16px;}
+  .insight .marker{position:absolute;left:0;top:1px;width:17px;height:17px;border-radius:50%;background:var(--panel2);border:2px solid var(--gold);display:flex;align-items:center;justify-content:center;font-size:9px;}
+  .insight .ititle{font-size:13.5px;font-weight:600;margin-bottom:3px;}
+  .insight .ibody{font-size:12.5px;color:var(--muted);line-height:1.55;margin-bottom:4px;}
+  .insight .ideadline{display:inline-block;font-size:10px;padding:2px 8px;border-radius:5px;border:1px solid rgba(217,164,65,.4);color:var(--gold);}
+  .warnbox{font-size:11px;color:var(--gold);display:flex;gap:6px;align-items:flex-start;background:rgba(217,164,65,.07);border:1px solid rgba(217,164,65,.25);border-radius:8px;padding:8px 10px;margin-bottom:10px;}
+  .taxcompare{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  @media (max-width:640px){.taxcompare{grid-template-columns:1fr;}}
+  .taxcol{border:1px solid var(--border);border-radius:8px;padding:12px;}
+  .taxcol.old{border-color:#3a3040;}
+  .taxcol.new{border-color:#2A4A33;}
+  .taxcol h3{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin-bottom:8px;}
+  .taxcol .line{display:flex;justify-content:space-between;font-size:12.5px;padding:3px 0;}
+  .taxcol .line b{font-family:'Courier New',monospace;}
+  .taxcol .total{border-top:1px solid var(--border);margin-top:6px;padding-top:6px;font-size:13.5px;}
+  footer.foot{font-size:10.5px;color:var(--dim);text-align:center;padding:20px 0 10px;line-height:1.6;}
+  input[type=checkbox]{accent-color:var(--cyan);}
+  #chartTooltip{font-size:11px;background:var(--panel2);border:1px solid var(--border);border-radius:6px;padding:8px 10px;display:inline-block;margin-top:6px;min-height:20px;}
+  .legend{display:flex;flex-wrap:wrap;gap:14px;margin-bottom:6px;font-size:11px;color:var(--muted);}
+  .seqbar{display:flex;flex-wrap:wrap;gap:6px;padding:8px;background:var(--panel2);border:1px dashed var(--border);border-radius:8px;min-height:38px;}
+</style>
+</head>
+<body>
+<div id="root"><div class="wrap"><div style="padding:40px;text-align:center;color:#8593A3;">Loading planner…</div></div></div>
+<div id="error-box" style="display:none;padding:16px;margin:16px;border:1px solid #D9695F;border-radius:8px;background:#1A1112;color:#F2B8B5;font-family:monospace;font-size:12px;white-space:pre-wrap;"></div>
+<script>
+window.addEventListener('error', function (e) {
+  var box = document.getElementById('error-box');
+  box.style.display = 'block';
+  box.textContent = 'Something failed to run:\n' + (e.message || e.error) + (e.filename ? ('\n\nFile: ' + e.filename + ':' + e.lineno) : '');
+});
+</script>
+<script>
+(function(){
+"use strict";
+
+/* ============================== DATA ============================== */
+
+var TODAY = new Date(2026,6,24);   // 24 Jul 2026 (page build date)
+var REFORM_DATE = new Date(2027,6,1); // 1 Jul 2027 CGT reform start
+function monthsBetween(a,b){ return (b.getFullYear()-a.getFullYear())*12 + (b.getMonth()-a.getMonth()); }
+var MONTHS_UNTIL_REFORM = monthsBetween(TODAY, REFORM_DATE); // ~11
+
+var STOCK_DB = {
+  VAS:{name:"Vanguard Australian Shares Index ETF", yieldCash:4, yieldGrossed:5.7, growth:4.5, mer:0.07, note:"Broad ASX 300 exposure, solid franking, moderate growth"},
+  VGS:{name:"Vanguard MSCI World ex-Australia ETF", yieldCash:2, yieldGrossed:2, growth:7, mer:0.18, note:"Global developed markets, low yield, growth-tilted, unfranked"},
+  VDHG:{name:"Vanguard Diversified High Growth ETF", yieldCash:3.4, yieldGrossed:4.3, growth:6, mer:0.27, note:"All-in-one diversified fund, 90% growth assets"},
+  VHY:{name:"Vanguard Australian Shares High Yield ETF", yieldCash:3.6, yieldGrossed:5.1, growth:3.5, mer:0.25, note:"Tilts toward high-dividend AU payers, less diversified than VAS"},
+  A200:{name:"BetaShares Australia 200 ETF", yieldCash:3.8, yieldGrossed:5.4, growth:4.5, mer:0.04, note:"Similar to VAS, lower fee, ASX 200 only"},
+  IVV:{name:"iShares S&P 500 ETF (AU)", yieldCash:1.2, yieldGrossed:1.2, growth:8.5, mer:0.04, note:"US large-cap, low yield, strong historical growth, unfranked"},
+  NDQ:{name:"BetaShares NASDAQ 100 ETF", yieldCash:0.5, yieldGrossed:0.5, growth:10, mer:0.48, note:"US tech-heavy, very low yield, high growth and volatility"},
+  VAP:{name:"Vanguard Australian Property Securities ETF", yieldCash:4.5, yieldGrossed:4.8, growth:3, mer:0.23, note:"AU listed property (REITs), interest-rate sensitive"},
+  VEU:{name:"Vanguard All-World ex-US ETF", yieldCash:2.8, yieldGrossed:2.8, growth:6, mer:0.08, note:"Diversifies away from US-heavy funds like VGS, unfranked"},
+  VGE:{name:"Vanguard FTSE Emerging Markets ETF", yieldCash:2.6, yieldGrossed:2.6, growth:5.5, mer:0.48, note:"Emerging markets, higher volatility and currency risk"},
+  HLI:{name:"Helia Group Ltd", yieldCash:5.7, yieldGrossed:7.6, growth:3, mer:0, note:"Single company (mortgage insurer), higher yield but no diversification, no management fee since it isn't a fund"}
+};
+var GENERIC_DEFAULT = {name:"Unrecognised ticker", yieldCash:3, yieldGrossed:3.5, growth:6, mer:0.2, note:"Placeholder figures — edit these"};
+
+/* Flat-fee broker presets. Figures are rough, publicly-advertised headline rates as at mid-2026 for a
+   typical few-thousand-dollar ETF order, editable once selected since real pricing can be tiered. */
+var BROKER_DB = {
+  pearler:{name:"Pearler", buyFee:6.50, sellFee:6.50, note:"Flat fee, CHESS-sponsored. Some ETFs get free brokerage if held 12+ months — not modelled here, treated as a conservative default."},
+  stake:{name:"Stake (ASX)", buyFee:3.00, sellFee:3.00, note:"Flat ASX brokerage."},
+  superhero:{name:"Superhero", buyFee:2.00, sellFee:2.00, note:"Flat ETF brokerage."},
+  selfwealth:{name:"SelfWealth", buyFee:9.50, sellFee:9.50, note:"Flat brokerage regardless of order size."},
+  commsec:{name:"CommSec", buyFee:19.95, sellFee:19.95, note:"Tiered pricing — this is an approximate fee for a typical few-thousand-dollar order, not a fixed rate."},
+  cmc:{name:"CMC Markets", buyFee:9.90, sellFee:9.90, note:"Tiered pricing — approximate fee for a typical order size."},
+  betashares:{name:"Betashares Direct", buyFee:0, sellFee:0, note:"Free via auto-invest, limited to Betashares-issued ETFs (e.g. A200, NDQ). Other trades may incur fees."},
+  custom:{name:"Custom / other broker", buyFee:6.50, sellFee:6.50, note:"Type in your own broker's fee."}
+};
+var PALETTE = ["#4FC3D9","#D9A441","#6FBE8F","#D9695F","#B48FD9","#7FA8D9","#D9C24F","#5FA8A0"];
+
+/* Income tax brackets, resident individual, excl. Medicare levy (added separately) */
+var BRACKETS = {
+  2025: [[0,18200,0],[18200,45000,0.16],[45000,135000,0.30],[135000,190000,0.37],[190000,Infinity,0.45]],
+  2026: [[0,18200,0],[18200,45000,0.15],[45000,135000,0.30],[135000,190000,0.37],[190000,Infinity,0.45]]
+};
+function incomeTax(taxableIncome, ruleYear){
+  if(taxableIncome<=0) return 0;
+  var b = BRACKETS[ruleYear];
+  var tax=0;
+  for(var i=0;i<b.length;i++){
+    var lo=b[i][0], hi=b[i][1], rate=b[i][2];
+    if(taxableIncome>lo) tax += (Math.min(taxableIncome,hi)-lo)*rate;
+  }
+  return tax + taxableIncome*0.02; // 2% Medicare levy, flat-rate simplification
+}
+
+/* ============================== STATE ============================== */
+
+var state = {
+  stocks: [
+    {id:1, ticker:"VAS", name:STOCK_DB.VAS.name, balance:30000, yieldCash:4, yieldGrossed:5.7, growth:4.5, mer:0.07, color:PALETTE[0]},
+    {id:2, ticker:"VGS", name:STOCK_DB.VGS.name, balance:30000, yieldCash:2, yieldGrossed:2, growth:7, mer:0.18, color:PALETTE[1]}
+  ],
+  broker:{id:"pearler", buyFee:BROKER_DB.pearler.buyFee, sellFee:BROKER_DB.pearler.sellFee},
+  monthlyContribution:1000,
+  currentAge: 25,
+  inflation: 3,
+  adjustInflation:true,
+  targetDividend:50000,
+  targetAge:50,
+  yieldView:"both",
+  contribMode:"rotate",          // 'rotate' | 'custom'
+  customSequence:[],             // array of stock ids
+  reallocAge:null,
+  reallocTargets:[],
+  scenarios:[],
+  activeTab:"summary",
+  chartTab:"dividend",
+  newTicker:"",
+  newBalance:0,
+  tax:{
+    salary:100000,
+    sellStockId:null,   // set on init
+    sellPercent:100,
+    sellAge:50
+  }
+};
+state.tax.sellStockId = state.stocks[0].id;
+
+/* ============================== ENGINE ============================== */
+
+function activeSequence(){
+  if(state.contribMode==="custom" && state.customSequence.length>0) return state.customSequence.slice();
+  return state.stocks.map(function(s){return s.id;});
+}
+
+function simulateMulti(opts){
+  var stocks=opts.stocks, monthlyContribution=opts.monthlyContribution, months=opts.months,
+      reallocation=opts.reallocation, yieldField=opts.yieldField, sequence=opts.sequence,
+      lumpSum=opts.lumpSum||0, lumpSumStockId=opts.lumpSumStockId, brokerBuyFee=opts.brokerBuyFee||0;
+  var bal={};
+  stocks.forEach(function(s){
+    var extra = (lumpSumStockId===s.id)?lumpSum:0;
+    bal[s.id]={pre:s.balance+extra, post:0, costPre:s.balance+extra, costPost:0};
+  });
+  var monthlyGrowth={};
+  stocks.forEach(function(s){ var netGrowth=s.growth-(s.mer||0); monthlyGrowth[s.id]=Math.pow(1+netGrowth/100,1/12)-1; });
+  var quarterDiv=0, cashPool=0, cumFees=0;
+  var results=[];
+  for(var m=1;m<=months;m++){
+    var postReform = m>MONTHS_UNTIL_REFORM;
+    var divThisMonth=0;
+    stocks.forEach(function(s){ var b=bal[s.id]; divThisMonth += (b.pre+b.post)*(s[yieldField]/100/12); });
+    quarterDiv+=divThisMonth;
+    stocks.forEach(function(s){ var b=bal[s.id]; var g=1+monthlyGrowth[s.id]; b.pre*=g; b.post*=g; });
+    if(m%3===0){ cashPool+=quarterDiv; quarterDiv=0; }
+    var grossBuyAmount = monthlyContribution + cashPool;
+    cashPool=0;
+    var feePaid = Math.min(grossBuyAmount, brokerBuyFee);
+    var buyAmount = grossBuyAmount - feePaid;
+    cumFees += feePaid;
+    var activeIds = (reallocation && m>reallocation.thresholdMonth && reallocation.targetIds.length>0) ? reallocation.targetIds : sequence;
+    var targetId = activeIds[(m-1)%activeIds.length];
+    var b2 = bal[targetId];
+    if(postReform){ b2.post+=buyAmount; b2.costPost+=buyAmount; } else { b2.pre+=buyAmount; b2.costPre+=buyAmount; }
+    var totalValue=0, totalCostBase=0, annualDividendRunRate=0;
+    stocks.forEach(function(s){
+      var b=bal[s.id];
+      totalValue += b.pre+b.post;
+      totalCostBase += b.costPre+b.costPost;
+      annualDividendRunRate += (b.pre+b.post)*(s[yieldField]/100);
+    });
+    var snap={}; stocks.forEach(function(s){ snap[s.id]={pre:bal[s.id].pre,post:bal[s.id].post,costPre:bal[s.id].costPre,costPost:bal[s.id].costPost}; });
+    results.push({month:m, totalValue:totalValue, totalCostBase:totalCostBase, annualDividendRunRate:annualDividendRunRate, postReform:postReform, bal:snap, cumBrokerFees:cumFees});
+  }
+  return results;
+}
+
+function findCrossingMonth(res, target, inflRate){
+  for(var i=0;i<res.length;i++){
+    var r=res[i];
+    var adjTarget = inflRate ? target*Math.pow(1+inflRate, r.month/12) : target;
+    if(r.annualDividendRunRate>=adjTarget) return r.month;
+  }
+  return null;
+}
+
+function solveMonthlyContribution(params, targetMonth, targetDividend, inflRate){
+  var lo=0, hi=80000;
+  for(var i=0;i<40;i++){
+    var mid=(lo+hi)/2;
+    var res=simulateMulti(Object.assign({},params,{monthlyContribution:mid, months:targetMonth}));
+    var point=res[targetMonth-1];
+    var adjTarget = inflRate? targetDividend*Math.pow(1+inflRate, targetMonth/12): targetDividend;
+    if(point.annualDividendRunRate<adjTarget) lo=mid; else hi=mid;
+  }
+  return hi;
+}
+function solveLumpSum(params, targetMonth, targetDividend, inflRate, lumpSumStockId){
+  var lo=0, hi=2000000;
+  for(var i=0;i<40;i++){
+    var mid=(lo+hi)/2;
+    var res=simulateMulti(Object.assign({},params,{months:targetMonth, lumpSum:mid, lumpSumStockId:lumpSumStockId}));
+    var point=res[targetMonth-1];
+    var adjTarget = inflRate? targetDividend*Math.pow(1+inflRate, targetMonth/12): targetDividend;
+    if(point.annualDividendRunRate<adjTarget) lo=mid; else hi=mid;
+  }
+  return hi;
+}
+
+function dividendTaxImpact(salary, cashDiv, frankingCredit, ruleYear){
+  var grossedUp = cashDiv+frankingCredit;
+  var taxWithout = incomeTax(salary, ruleYear);
+  var taxWith = incomeTax(salary+grossedUp, ruleYear);
+  var taxOnDividends = taxWith-taxWithout;
+  var net = taxOnDividends - frankingCredit;
+  return {grossedUp:grossedUp, taxOnDividends:taxOnDividends, net:net};
+}
+
+/* Compare 2025-style rules (flat 50% discount forever) vs actual 2026 law (legacy discount pre-reform,
+   indexation + 30% minimum tax on real gains after 1 Jul 2027). Approximate model for education. */
+function cgtCompare(snapshot, stockId, sellFraction, salary, inflationPct, sellMonth, sellFee){
+  sellFee = sellFee||0;
+  var b = snapshot.bal[stockId];
+  // brokerage on the sale reduces capital proceeds. Apportion the flat fee across the pre/post reform
+  // slices in proportion to how much of the sold parcel sits in each, then deduct it from proceeds once.
+  var preShare = (b.pre+b.post)>0 ? b.pre/(b.pre+b.post) : 0;
+  var feePre = sellFee*preShare, feePost = sellFee-feePre;
+  var balancePostSold = Math.max(0, b.post*sellFraction - feePost);
+  var costBasePostSold = b.costPost*sellFraction;
+  var balancePreSold = Math.max(0, b.pre*sellFraction - feePre);
+  var costBasePreSold = b.costPre*sellFraction;
+  var gainPreRaw = Math.max(0, balancePreSold-costBasePreSold);
+  var gainPostRaw = Math.max(0, balancePostSold-costBasePostSold);
+
+  // hypothetical "2025 rules continued": flat 50% discount on everything, no minimum tax floor
+  var totalGainOld = Math.max(0,balancePreSold-costBasePreSold) + Math.max(0,balancePostSold-costBasePostSold);
+  var taxableOld = totalGainOld*0.5;
+  var taxOld = incomeTax(salary+taxableOld,2025) - incomeTax(salary,2025);
+
+  // actual 2026 law: pre-reform gain keeps legacy 50% discount; post-reform gain uses CPI-indexed cost base + 30% floor
+  var taxablePreDiscounted = gainPreRaw*0.5;
+  var yearsPostReform = Math.max(0,(sellMonth-MONTHS_UNTIL_REFORM))/12;
+  // costBasePost builds up gradually via regular contributions across the whole post-reform window, not as a
+  // single lump on the reform date, so index it using the average holding period (half the elapsed window)
+  // rather than the full window. Simplified but far more realistic for a dollar-cost-averaged holding.
+  var indexedCostBasePost = costBasePostSold*Math.pow(1+inflationPct/100, yearsPostReform/2);
+  var realGainPost = Math.max(0, balancePostSold-indexedCostBasePost);
+  var taxA = incomeTax(salary+taxablePreDiscounted,2026) - incomeTax(salary,2026);
+  var taxB = incomeTax(salary+taxablePreDiscounted+realGainPost,2026) - incomeTax(salary,2026);
+  var attributablePostTax = Math.max(taxB-taxA, realGainPost*0.30);
+  var taxNew = taxA+attributablePostTax;
+
+  return {
+    gainPreRaw:gainPreRaw, gainPostRaw:gainPostRaw, totalGainOld:totalGainOld, taxableOld:taxableOld, taxOld:taxOld,
+    taxablePreDiscounted:taxablePreDiscounted, realGainPost:realGainPost, taxNew:taxNew,
+    totalGainNew: gainPreRaw+gainPostRaw
+  };
+}
+
+/* ============================== FORMAT HELPERS ============================== */
+
+function fmtFull(n){ return new Intl.NumberFormat("en-AU",{style:"currency",currency:"AUD",maximumFractionDigits:0}).format(n||0); }
+function fmtCompact(n){ return new Intl.NumberFormat("en-AU",{notation:"compact",maximumFractionDigits:1}).format(n||0); }
+function fmtPct(n){ return (n||0).toFixed(1)+"%"; }
+function esc(s){ return String(s).replace(/[&<>"]/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); }
+
+/* ============================== CHART (vanilla SVG) ============================== */
+
+function renderLineChart(containerId, data, series, opts){
+  opts=opts||{};
+  var width=760, height=opts.height||300;
+  var padding={top:12,right:16,bottom:30,left:60};
+  var innerW=width-padding.left-padding.right, innerH=height-padding.top-padding.bottom;
+  var allValues=[];
+  data.forEach(function(d){ series.forEach(function(s){ if(Number.isFinite(d[s.key])) allValues.push(d[s.key]); }); });
+  var maxV=Math.max.apply(null,allValues.concat([1]));
+  function xScale(i){ return padding.left + (data.length<=1?0:i/(data.length-1)*innerW); }
+  function yScale(v){ return padding.top+innerH - (v/maxV)*innerH; }
+  function linePath(key){
+    return data.map(function(d,i){ return (i===0?"M ":"L ")+xScale(i).toFixed(1)+" "+yScale(d[key]).toFixed(1); }).join(" ");
+  }
+  var grid=[0,0.25,0.5,0.75,1];
+  var xTickEvery=Math.max(1,Math.round(data.length/8));
+  var svg = '<svg viewBox="0 0 '+width+' '+height+'" style="width:100%;height:auto;" data-chart="1">';
+  grid.forEach(function(g){
+    var y=padding.top+innerH-g*innerH;
+    svg += '<line x1="'+padding.left+'" y1="'+y+'" x2="'+(width-padding.right)+'" y2="'+y+'" stroke="#1E2A35" stroke-dasharray="3 3"/>';
+    svg += '<text x="'+(padding.left-8)+'" y="'+(y+3)+'" text-anchor="end" font-size="10" fill="#5B6A78" font-family="monospace">'+fmtCompact(g*maxV)+'</text>';
+  });
+  data.forEach(function(d,i){
+    if(i%xTickEvery===0){
+      svg += '<text x="'+xScale(i)+'" y="'+(height-padding.bottom+16)+'" text-anchor="middle" font-size="10" fill="#5B6A78" font-family="monospace">'+d.age+'</text>';
+    }
+  });
+  series.forEach(function(s){
+    svg += '<path d="'+linePath(s.key)+'" fill="none" stroke="'+s.color+'" stroke-width="'+(s.dash?1.5:2)+'"'+(s.dash?' stroke-dasharray="5 4"':'')+'/>';
+  });
+  svg += '</svg>';
+  var legend = '<div class="legend">'+series.map(function(s){
+    return '<span style="display:flex;align-items:center;gap:5px;"><span style="width:12px;height:2px;background:'+s.color+';display:inline-block;"></span>'+esc(s.name)+'</span>';
+  }).join("")+'</div>';
+  var el=document.getElementById(containerId);
+  el.innerHTML = legend+svg+'<div id="'+containerId+'_tt"></div>';
+  var svgEl = el.querySelector("svg");
+  var tt = document.getElementById(containerId+"_tt");
+  svgEl.addEventListener("mousemove", function(e){
+    var rect=svgEl.getBoundingClientRect();
+    var relX=(e.clientX-rect.left)/rect.width*width;
+    var idx=Math.round((relX-padding.left)/innerW*(data.length-1));
+    idx=Math.max(0,Math.min(data.length-1,idx));
+    var d=data[idx];
+    var html='<b style="color:#7E93A3;">Age '+d.age+'</b><br/>'+series.map(function(s){
+      return '<span style="color:'+s.color+';">&#9679;</span> '+esc(s.name)+': <b style="font-family:monospace;">'+fmtFull(d[s.key])+'</b>';
+    }).join("<br/>");
+    tt.innerHTML='<div style="background:#0F1720;border:1px solid #26333F;border-radius:6px;padding:8px 10px;font-size:11px;display:inline-block;">'+html+'</div>';
+  });
+  svgEl.addEventListener("mouseleave", function(){ tt.innerHTML=""; });
+}
+
+function gaugeSVG(pct, primaryValue, primaryLabel, secondaryLabel){
+  var clamped=Math.max(0,Math.min(1,pct));
+  var R=80,CX=100,CY=104;
+  var semi=Math.PI*R;
+  var angle=(180-clamped*180)*(Math.PI/180);
+  var needleX=CX+(R-14)*Math.cos(angle), needleY=CY-(R-14)*Math.sin(angle);
+  var ticks=[0,0.25,0.5,0.75,1];
+  var s='<svg viewBox="0 0 200 120" style="width:100%;max-width:260px;display:block;margin:0 auto;">';
+  s+='<path d="M '+(CX-R)+' '+CY+' A '+R+' '+R+' 0 0 1 '+(CX+R)+' '+CY+'" fill="none" stroke="#26333F" stroke-width="10" stroke-linecap="round"/>';
+  s+='<path d="M '+(CX-R)+' '+CY+' A '+R+' '+R+' 0 0 1 '+(CX+R)+' '+CY+'" fill="none" stroke="#4FC3D9" stroke-width="10" stroke-linecap="round" stroke-dasharray="'+(clamped*semi)+' '+semi+'"/>';
+  ticks.forEach(function(t){
+    var a=(180-t*180)*(Math.PI/180);
+    var x1=CX+(R+6)*Math.cos(a), y1=CY-(R+6)*Math.sin(a), x2=CX+(R+13)*Math.cos(a), y2=CY-(R+13)*Math.sin(a);
+    s+='<line x1="'+x1+'" y1="'+y1+'" x2="'+x2+'" y2="'+y2+'" stroke="#4A5A68" stroke-width="2"/>';
+  });
+  s+='<line x1="'+CX+'" y1="'+CY+'" x2="'+needleX+'" y2="'+needleY+'" stroke="#D9A441" stroke-width="3" stroke-linecap="round"/>';
+  s+='<circle cx="'+CX+'" cy="'+CY+'" r="5" fill="#D9A441"/>';
+  s+='<text x="'+CX+'" y="'+(CY-22)+'" text-anchor="middle" fill="#EAF1F6" font-size="18" font-family="monospace" font-weight="600">'+esc(primaryValue)+'</text>';
+  s+='<text x="'+CX+'" y="'+(CY-6)+'" text-anchor="middle" fill="#7E93A3" font-size="8.5">'+esc(primaryLabel)+'</text>';
+  s+='<text x="'+CX+'" y="'+(CY+16)+'" text-anchor="middle" fill="#5B6A78" font-size="8">'+esc(secondaryLabel)+'</text>';
+  s+='</svg>';
+  return s;
+}
+
+/* ============================== DERIVED STATE ============================== */
+
+function derive(){
+  var months=40*12;
+  var seq=activeSequence();
+  var reallocation = (state.reallocAge!=null && state.reallocTargets.length>0) ? {thresholdMonth:(state.reallocAge-state.currentAge)*12, targetIds:state.reallocTargets} : null;
+  var brokerBuyFee = state.broker.buyFee||0;
+  var baseArgs={stocks:state.stocks, monthlyContribution:state.monthlyContribution, months:months, reallocation:reallocation, sequence:seq, brokerBuyFee:brokerBuyFee};
+  var simCash=simulateMulti(Object.assign({},baseArgs,{yieldField:"yieldCash"}));
+  var simGrossed=simulateMulti(Object.assign({},baseArgs,{yieldField:"yieldGrossed"}));
+  var inflRate = state.adjustInflation ? state.inflation/100 : 0;
+  var crossCashMonth=findCrossingMonth(simCash, state.targetDividend, inflRate);
+  var crossGrossedMonth=findCrossingMonth(simGrossed, state.targetDividend, inflRate);
+
+  // zero-fee comparison run (no MER drag, no brokerage) purely to quantify fee impact
+  var noFeeStocks = state.stocks.map(function(s){ return Object.assign({},s,{mer:0}); });
+  var simCashNoFee = simulateMulti(Object.assign({},baseArgs,{stocks:noFeeStocks, yieldField:"yieldCash", brokerBuyFee:0}));
+
+  var chartData=[];
+  for(var y=0;y<=40;y++){
+    var m=y===0?1:y*12;
+    var c=simCash[m-1], g=simGrossed[m-1];
+    var target = state.adjustInflation ? state.targetDividend*Math.pow(1+inflRate,y) : state.targetDividend;
+    chartData.push({age:state.currentAge+y, cashDividend:Math.round(c.annualDividendRunRate), grossedDividend:Math.round(g.annualDividendRunRate),
+      cashValue:Math.round(c.totalValue), cashCostBase:Math.round(c.totalCostBase), target:Math.round(target)});
+  }
+
+  var targetMonth=(state.targetAge-state.currentAge)*12;
+  var yieldField = state.yieldView==="grossed"?"yieldGrossed":"yieldCash";
+  var reqContribCash=null, reqContribGrossed=null;
+  if(targetMonth>0){
+    reqContribCash = solveMonthlyContribution({stocks:state.stocks, reallocation:reallocation, yieldField:"yieldCash", sequence:seq, brokerBuyFee:brokerBuyFee}, targetMonth, state.targetDividend, inflRate);
+    reqContribGrossed = solveMonthlyContribution({stocks:state.stocks, reallocation:reallocation, yieldField:"yieldGrossed", sequence:seq, brokerBuyFee:brokerBuyFee}, targetMonth, state.targetDividend, inflRate);
+  }
+
+  var totalBalance = state.stocks.reduce(function(s,st){return s+st.balance;},0);
+  var currentRunRateCash = state.stocks.reduce(function(s,st){return s+st.balance*(st.yieldCash/100);},0);
+  var currentRunRateGrossed = state.stocks.reduce(function(s,st){return s+st.balance*(st.yieldGrossed/100);},0);
+  var blendedYieldCash = totalBalance>0? currentRunRateCash/totalBalance : 0;
+  var gaugePct = state.targetDividend>0 ? currentRunRateCash/state.targetDividend : 0;
+  var highestYieldStock = state.stocks.slice().sort(function(a,b){return b[yieldField]-a[yieldField];})[0];
+
+  var feeCheckMonth = Math.min(months, targetMonth>0?targetMonth:months);
+  var feeImpact = {
+    month: feeCheckMonth,
+    valueWithFees: simCash[feeCheckMonth-1].totalValue,
+    valueNoFees: simCashNoFee[feeCheckMonth-1].totalValue,
+    brokerageSoFar: simCash[feeCheckMonth-1].cumBrokerFees
+  };
+  feeImpact.gap = feeImpact.valueNoFees - feeImpact.valueWithFees;
+
+  return {
+    months:months, seq:seq, reallocation:reallocation, simCash:simCash, simGrossed:simGrossed, inflRate:inflRate,
+    crossCashMonth:crossCashMonth, crossGrossedMonth:crossGrossedMonth, chartData:chartData, targetMonth:targetMonth,
+    yieldField:yieldField, reqContribCash:reqContribCash, reqContribGrossed:reqContribGrossed,
+    totalBalance:totalBalance, currentRunRateCash:currentRunRateCash, currentRunRateGrossed:currentRunRateGrossed,
+    blendedYieldCash:blendedYieldCash, gaugePct:gaugePct, highestYieldStock:highestYieldStock,
+    brokerBuyFee:brokerBuyFee, sellFee:state.broker.sellFee||0, feeImpact:feeImpact
+  };
+}
+
+/* ============================== ACTIONS (global, called from inline handlers) ============================== */
+
+function updateStock(id, field, value){
+  var s=state.stocks.find(function(x){return x.id===id;});
+  if(!s) return;
+  if(field==="balance"||field==="yieldCash"||field==="yieldGrossed"||field==="growth"||field==="mer") s[field]=parseFloat(value)||0;
+  render();
+}
+function removeStock(id){
+  if(state.stocks.length<=1) return;
+  state.stocks = state.stocks.filter(function(s){return s.id!==id;});
+  state.reallocTargets = state.reallocTargets.filter(function(t){return t!==id;});
+  state.customSequence = state.customSequence.filter(function(t){return t!==id;});
+  state.scenarios.forEach(function(sc){ if(sc.targetId===id) sc.targetId = state.stocks[0]?state.stocks[0].id:null; });
+  if(state.tax.sellStockId===id) state.tax.sellStockId = state.stocks[0]?state.stocks[0].id:null;
+  render();
+}
+function addStock(){
+  var key=(state.newTicker||"").trim().toUpperCase();
+  if(!key) return;
+  var hit=STOCK_DB[key];
+  var id=Math.max.apply(null,state.stocks.map(function(s){return s.id;}).concat([0]))+1;
+  var color=PALETTE[state.stocks.length%PALETTE.length];
+  var d=hit||GENERIC_DEFAULT;
+  state.stocks.push({id:id, ticker:key, name:d.name, balance:state.newBalance||0, yieldCash:d.yieldCash, yieldGrossed:d.yieldGrossed, growth:d.growth, mer:d.mer||0, color:color, isEstimate:true, unrecognized:!hit});
+  state.newTicker=""; state.newBalance=0;
+  render();
+}
+function toggleReallocTarget(id){
+  var i=state.reallocTargets.indexOf(id);
+  if(i>=0) state.reallocTargets.splice(i,1); else state.reallocTargets.push(id);
+  render();
+}
+function clearRealloc(){ state.reallocAge=null; state.reallocTargets=[]; render(); }
+function setContribMode(mode){ state.contribMode=mode; render(); }
+function appendSequence(id){ state.customSequence.push(id); render(); }
+function removeSequenceAt(idx){ state.customSequence.splice(idx,1); render(); }
+function clearSequence(){ state.customSequence=[]; render(); }
+function addScenario(){
+  var id=Math.max.apply(null,state.scenarios.map(function(s){return s.id;}).concat([0]))+1;
+  var color=PALETTE[(state.scenarios.length+3)%PALETTE.length];
+  state.scenarios.push({id:id, label:"Scenario "+id, contributionDelta:500, reallocateAge:null, targetId:state.stocks[0]?state.stocks[0].id:null, color:color});
+  render();
+}
+function removeScenario(id){ state.scenarios=state.scenarios.filter(function(s){return s.id!==id;}); render(); }
+function updateScenario(id, field, value){
+  var s=state.scenarios.find(function(x){return x.id===id;});
+  if(!s) return;
+  if(field==="label") s.label=value;
+  else if(field==="contributionDelta") s.contributionDelta=parseFloat(value)||0;
+  else if(field==="targetId") s.targetId=parseInt(value);
+  else if(field==="reallocateAge") s.reallocateAge = value?parseFloat(value):null;
+  render();
+}
+function setBroker(id){
+  state.broker.id=id;
+  var b=BROKER_DB[id];
+  if(b){ state.broker.buyFee=b.buyFee; state.broker.sellFee=b.sellFee; }
+  render();
+}
+function setTab(t){ state.activeTab=t; render(); }
+function setChartTab(t){ state.chartTab=t; render(); }
+function toggleHelp(id){
+  var el=document.getElementById(id);
+  if(el) el.classList.toggle("open");
+}
+function setField(path, value, isFloat){
+  var parts=path.split(".");
+  var obj=state;
+  for(var i=0;i<parts.length-1;i++) obj=obj[parts[i]];
+  obj[parts[parts.length-1]] = isFloat? (parseFloat(value)||0) : value;
+  render();
+}
+function setBoolField(path, checked){
+  var parts=path.split(".");
+  var obj=state;
+  for(var i=0;i<parts.length-1;i++) obj=obj[parts[i]];
+  obj[parts[parts.length-1]] = checked;
+  render();
+}
+
+/* expose to inline handlers */
+["updateStock","removeStock","addStock","toggleReallocTarget","clearRealloc","setContribMode","appendSequence",
+ "removeSequenceAt","clearSequence","addScenario","removeScenario","updateScenario","setTab","setChartTab",
+ "toggleHelp","setField","setBoolField","setBroker"].forEach(function(name){ window[name]=eval(name); });
+
+/* ============================== RENDER: SETTINGS BAR + NAV ============================== */
+
+function renderSettingsBar(){
+  return ''+
+  '<div class="settingsbar">'+
+    '<div class="grid">'+
+      field("Monthly contribution","state.monthlyContribution",state.monthlyContribution,"AUD","setField('monthlyContribution',this.value,true)")+
+      field("Current age","state.currentAge",state.currentAge,"yrs","setField('currentAge',this.value,true)")+
+      field("Inflation","state.inflation",state.inflation,"%","setField('inflation',this.value,true)")+
+      field("Target dividend","state.targetDividend",state.targetDividend,"AUD/yr","setField('targetDividend',this.value,true)")+
+      field("Retire by age","state.targetAge",state.targetAge,"yrs","setField('targetAge',this.value,true)")+
+    '</div>'+
+    '<div class="row2">'+
+      '<div class="pill-toggle">'+
+        ["cash","grossed","both"].map(function(v){
+          return '<button onclick="setField(\'yieldView\',\''+v+'\')" class="'+(state.yieldView===v?"active":"")+'">'+(v==="grossed"?"Grossed-up":v)+'</button>';
+        }).join("")+
+      '</div>'+
+      '<label style="display:flex;align-items:center;gap:6px;cursor:pointer;">'+
+        '<input type="checkbox" '+(state.adjustInflation?"checked":"")+' onchange="setBoolField(\'adjustInflation\',this.checked)"/> Adjust target for inflation (today\'s dollars)'+
+      '</label>'+
+    '</div>'+
+  '</div>';
+}
+
+function field(label, name, value, suffix, onchange, step){
+  step = step || (suffix==="%"?"0.1":"1");
+  return '<label class="field">'+esc(label)+
+    '<div style="display:flex;align-items:center;gap:6px;background:#0F1720;border:1px solid #26333F;border-radius:6px;padding:4px 8px;">'+
+      '<input type="number" step="'+step+'" value="'+value+'" oninput="'+onchange+'" style="border:none;background:transparent;padding:2px 0;"/>'+
+      (suffix?'<span style="font-size:10px;color:#5B6A78;">'+esc(suffix)+'</span>':'')+
+    '</div></label>';
+}
+
+var TABS=[["summary","Summary"],["holdings","Holdings & Contributions"],["growth","Growth & Compounding"],["tax","Tax & CGT"],["insights","Insights"],["compare","Compare Scenarios"]];
+
+function renderNav(){
+  return '<nav class="tabs">'+TABS.map(function(t){
+    return '<button class="'+(state.activeTab===t[0]?"active":"")+'" onclick="setTab(\''+t[0]+'\')">'+t[1]+'</button>';
+  }).join("")+'</nav>';
+}
+
+function helpBtn(id){ return '<span class="help" onclick="toggleHelp(\''+id+'\')">?</span>'; }
+function helpBox(id, html){ return '<div class="helpbox" id="'+id+'">'+html+'</div>'; }
+
+/* ============================== RENDER: SUMMARY TAB ============================== */
+
+function renderSummary(d){
+  var h='';
+  h += '<div class="card"><h2>Where things stand '+helpBtn("h-sum")+'</h2>'+
+    helpBox("h-sum","This is the whole plan at a glance: today's dividend run-rate against your target, how long the two yield bases say it will take, and what portfolio size actually gets you there. Every other tab drills into one piece of this.")+
+    '<div class="grid4">'+
+      '<div class="readout" style="text-align:center;">'+gaugeSVG(d.gaugePct, fmtCompact(d.currentRunRateCash), "Today's dividend run-rate", "of "+fmtCompact(state.targetDividend)+" target")+'</div>'+
+      readout("Years to target (cash yield)", d.crossCashMonth?(d.crossCashMonth/12).toFixed(1)+" yrs":"40+ yrs", d.crossCashMonth?("Age "+(state.currentAge+d.crossCashMonth/12).toFixed(1)):"", "#4FC3D9")+
+      readout("Years to target (grossed-up)", d.crossGrossedMonth?(d.crossGrossedMonth/12).toFixed(1)+" yrs":"40+ yrs", d.crossGrossedMonth?("Age "+(state.currentAge+d.crossGrossedMonth/12).toFixed(1)):"", "#D9A441")+
+      readout("Portfolio needed for target", fmtCompact(d.blendedYieldCash>0?state.targetDividend/d.blendedYieldCash:0), "at blended cash yield", "#6FBE8F")+
+    '</div>'+
+  '</div>';
+
+  h += '<div class="card"><h2>Holdings snapshot</h2><div class="grid3">';
+  state.stocks.forEach(function(s){
+    h += '<div class="readout"><div class="lbl"><span class="dot" style="background:'+s.color+';"></span> '+esc(s.ticker)+'</div>'+
+      '<div class="val" style="font-size:15px;">'+fmtFull(s.balance)+'</div>'+
+      '<div class="sub">'+fmtPct(s.yieldCash)+' cash / '+fmtPct(s.yieldGrossed)+' grossed / '+fmtPct(s.growth)+' growth</div></div>';
+  });
+  h += '</div></div>';
+
+  h += '<div class="card"><h2>Today\'s dividend tax position '+helpBtn("h-sumtax")+'</h2>'+
+    helpBox("h-sumtax","A quick preview using the salary figure set on the Tax & CGT tab. Full detail, including the 2025 vs 2026 comparison, lives there.")+
+    (function(){
+      var creditNow = state.stocks.reduce(function(s,st){return s+st.balance*((st.yieldGrossed-st.yieldCash)/100);},0);
+      var res=dividendTaxImpact(state.tax.salary, d.currentRunRateCash, creditNow, 2026);
+      return '<div class="grid3">'+
+        readout("Cash dividends today", fmtFull(d.currentRunRateCash),"per year","#4FC3D9")+
+        readout("Franking credits today", fmtFull(creditNow),"grossed-up add-back","#D9A441")+
+        readout(res.net<=0?"Net refund from franking":"Extra tax owed", fmtFull(Math.abs(res.net)),"at salary "+fmtFull(state.tax.salary), res.net<=0?"#6FBE8F":"#D9695F")+
+      '</div>';
+    })()+
+  '</div>';
+
+  h += '<div class="card"><h2>Fees so far and their cost '+helpBtn("h-sumfee")+'</h2>'+
+    helpBox("h-sumfee","Compares your plan as set up (brokerage on each purchase, fund management fees dragging on growth) against an identical zero-fee scenario, projected to your target age. This is the real, compounded cost of fees, not just what you pay each trade.")+
+    '<div class="grid3">'+
+      readout("Brokerage paid by age "+(d.targetMonth>0?state.targetAge:(state.currentAge+40)), fmtFull(d.feeImpact.brokerageSoFar),"via "+esc(BROKER_DB[state.broker.id]?BROKER_DB[state.broker.id].name:state.broker.id),"#D9A441")+
+      readout("Portfolio value lost to fees", fmtFull(d.feeImpact.gap),"brokerage + MER drag, vs a zero-fee scenario","#D9695F")+
+      readout("Fee-free portfolio would be", fmtFull(d.feeImpact.valueNoFees),"vs "+fmtFull(d.feeImpact.valueWithFees)+" with fees","#8593A3")+
+    '</div>'+
+  '</div>';
+
+  h += '<div class="card"><h2>Solve for a target age '+helpBtn("h-sumsolve")+'</h2>'+
+    helpBox("h-sumsolve","Working backwards: pick the age you want to hit your target dividend by (set at the top of the page), and this shows the combined monthly contribution across all holdings needed to get there, on both yield bases.")+
+    '<div class="grid2">'+
+      readout("Required (cash yield)", d.reqContribCash!=null?fmtFull(d.reqContribCash)+"/mo":"—","","#4FC3D9")+
+      readout("Required (grossed-up)", d.reqContribGrossed!=null?fmtFull(d.reqContribGrossed)+"/mo":"—","","#D9A441")+
+    '</div>'+
+  '</div>';
+
+  return h;
+}
+
+function readout(label,val,sub,accent){
+  return '<div class="readout"><div class="lbl">'+esc(label)+'</div><div class="val" style="color:'+accent+';">'+esc(val)+'</div>'+(sub?'<div class="sub">'+esc(sub)+'</div>':'')+'</div>';
+}
+
+/* ============================== RENDER: HOLDINGS TAB ============================== */
+
+function renderHoldings(d){
+  var h='';
+  h+='<div class="card"><h2>Holdings '+helpBtn("h-hold")+'</h2>'+
+    helpBox("h-hold","Add each stock or ETF you hold, or are considering. Known tickers auto-fill estimated yield, growth and management fee (MER) figures, unknown ones get a generic placeholder you should edit. Everything else on the page, including the projections and the fee impact below, is built from this table.")+
+    '<div class="warnbox">Auto-filled figures are rough planning estimates, not live data. Verify against the fund\'s current fact sheet (PDS).</div>'+
+    '<table><thead><tr><th>Ticker</th><th>Balance</th><th>Cash yield</th><th>Grossed yield</th><th>Growth</th><th>MER '+helpBtn("h-mer")+'</th><th></th></tr></thead><tbody>';
+  state.stocks.forEach(function(s){
+    h+='<tr><td><span class="dot" style="background:'+s.color+';"></span> <b>'+esc(s.ticker)+'</b><div style="font-size:10px;color:#5B6A78;max-width:160px;">'+esc(s.name)+'</div></td>'+
+      '<td><input type="number" step="100" value="'+s.balance+'" style="width:90px;" onchange="updateStock('+s.id+',\'balance\',this.value)"/></td>'+
+      '<td><input type="number" step="0.1" value="'+s.yieldCash+'" style="width:60px;" onchange="updateStock('+s.id+',\'yieldCash\',this.value)"/>%</td>'+
+      '<td><input type="number" step="0.1" value="'+s.yieldGrossed+'" style="width:60px;" onchange="updateStock('+s.id+',\'yieldGrossed\',this.value)"/>%</td>'+
+      '<td><input type="number" step="0.1" value="'+s.growth+'" style="width:60px;" onchange="updateStock('+s.id+',\'growth\',this.value)"/>%</td>'+
+      '<td><input type="number" step="0.01" value="'+(s.mer||0)+'" style="width:55px;" onchange="updateStock('+s.id+',\'mer\',this.value)"/>%</td>'+
+      '<td><button class="btn small danger" '+(state.stocks.length<=1?"disabled":"")+' onclick="removeStock('+s.id+')">Remove</button></td></tr>';
+  });
+  h+='</tbody></table>'+
+    '<div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-top:12px;">'+
+      '<label class="field">Add ticker<input type="text" value="'+esc(state.newTicker)+'" placeholder="e.g. HLI" style="width:110px;" oninput="setField(\'newTicker\',this.value)"/></label>'+
+      '<label class="field">Starting balance<input type="number" step="100" value="'+state.newBalance+'" style="width:120px;" oninput="setField(\'newBalance\',this.value,true)"/></label>'+
+      '<button class="btn primary" onclick="addStock()">+ Add</button>'+
+    '</div>'+
+    helpBox("h-mer","The fund's management fee (MER), charged annually as a percentage of what's invested and taken out of the fund's return automatically, you never see a separate bill for it. This calculator treats it as a direct drag on growth: the compounding math uses growth minus MER as the real annual return. It doesn't reduce the dividend yield directly, since distributions are already paid net of the MER by the fund.")+
+  '</div>';
+
+  h+='<div class="card"><h2>Broker &amp; fees '+helpBtn("h-broker")+'</h2>'+
+    helpBox("h-broker","Pick your broker for a rough headline brokerage fee, or choose Custom and type your own. This fee is charged once for whichever holding gets bought each month (your contribution plus that quarter's reinvested dividends land in one trade), and is subtracted from what actually gets invested that month, same as it would be from your real cash outlay. It also reduces capital proceeds in the CGT calculator on the Tax tab. Fund management fees (MER) are set per holding in the table above, not here.")+
+    '<div class="grid3" style="margin-bottom:10px;">'+
+      '<label class="field">Broker'+
+        '<select onchange="setBroker(this.value)" style="background:#0F1720;border:1px solid #26333F;border-radius:6px;color:#EAF1F6;padding:6px 8px;">'+
+          Object.keys(BROKER_DB).map(function(k){ return '<option value="'+k+'" '+(state.broker.id===k?"selected":"")+'>'+esc(BROKER_DB[k].name)+'</option>'; }).join("")+
+        '</select></label>'+
+      field("Buy fee","broker.buyFee",state.broker.buyFee,"AUD/trade","setField('broker.buyFee',this.value,true)")+
+      field("Sell fee","broker.sellFee",state.broker.sellFee,"AUD/trade","setField('broker.sellFee',this.value,true)")+
+    '</div>'+
+    '<div style="font-size:11.5px;color:#8593A3;">'+esc(BROKER_DB[state.broker.id]?BROKER_DB[state.broker.id].note:"")+'</div>'+
+  '</div>';
+
+  h+='<div class="card"><h2>Contribution pattern '+helpBtn("h-seq")+'</h2>'+
+    helpBox("h-seq","By default your monthly contribution rotates evenly through every holding (e.g. two stocks = alternating months). Switch to custom to build any repeating pattern, e.g. two months into VAS then one into VGS, and it loops for the full projection. Reinvested quarterly dividends follow the same rotation.")+
+    '<div class="pill-toggle" style="margin-bottom:10px;">'+
+      '<button class="'+(state.contribMode==="rotate"?"active":"")+'" onclick="setContribMode(\'rotate\')">Rotate evenly (default)</button>'+
+      '<button class="'+(state.contribMode==="custom"?"active":"")+'" onclick="setContribMode(\'custom\')">Custom pattern</button>'+
+    '</div>'+
+    (state.contribMode==="custom" ? (
+      '<div style="margin-bottom:8px;">'+state.stocks.map(function(s){
+        return '<button class="btn small" style="margin-right:6px;border-color:'+s.color+';color:'+s.color+';" onclick="appendSequence('+s.id+')">+ '+esc(s.ticker)+'</button>';
+      }).join("")+'<button class="btn small danger" onclick="clearSequence()">Clear</button></div>'+
+      '<div class="seqbar">'+(state.customSequence.length===0?'<span style="color:#5B6A78;font-size:11px;">No pattern set — click a ticker above to build one, it repeats in this order.</span>':
+        state.customSequence.map(function(id,idx){
+          var s=state.stocks.find(function(x){return x.id===id;});
+          return '<span class="tag" style="border-color:'+(s?s.color:"#333")+';">'+(s?esc(s.ticker):"?")+' <button onclick="removeSequenceAt('+idx+')">&times;</button></span>';
+        }).join(""))+'</div>'
+    ) : '<div style="font-size:11.5px;color:#5B6A78;">Current default order: '+state.stocks.map(function(s){return s.ticker;}).join(" &rarr; ")+' &rarr; repeat</div>')+
+  '</div>';
+
+  h+='<div class="card"><h2>Reallocation plan '+helpBtn("h-real")+'</h2>'+
+    helpBox("h-real","Optional. From a chosen age, all new contributions (and reinvested dividends) redirect to the holdings you pick here instead of following the rotation above. Existing balances aren\'t touched, so there\'s no CGT event from this alone.")+
+    '<div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end;">'+
+      '<label class="field" style="width:110px;">From age<input type="number" step="1" value="'+(state.reallocAge!=null?state.reallocAge:"")+'" oninput="setField(\'reallocAge\',this.value,true)"/></label>'+
+      '<div style="display:flex;gap:6px;flex-wrap:wrap;">'+state.stocks.map(function(s){
+        var on=state.reallocTargets.indexOf(s.id)>=0;
+        return '<button class="btn small" style="'+(on?('border-color:'+s.color+';color:'+s.color+';background:'+s.color+'1A;'):'')+'" onclick="toggleReallocTarget('+s.id+')">'+esc(s.ticker)+'</button>';
+      }).join("")+'</div>'+
+      ((state.reallocAge!=null && state.reallocTargets.length>0)?'<button class="btn small danger" onclick="clearRealloc()">Clear</button>':'')+
+    '</div>'+
+  '</div>';
+
+  return h;
+}
+
+/* ============================== RENDER: GROWTH TAB ============================== */
+
+function renderGrowth(d){
+  var h='';
+  h+='<div class="card"><h2>Projection chart '+helpBtn("h-chart")+'</h2>'+
+    helpBox("h-chart","\"Dividend income\" shows your annual dividend run-rate climbing toward the dashed target line. \"Portfolio value vs contributed\" shows the total balance against the cumulative cash you\'ve actually put in (initial balances + contributions + reinvested dividends) — the gap between the two lines is compounding growth doing its job. Hover any point for exact figures.")+
+    '<div style="display:flex;gap:6px;margin-bottom:10px;">'+
+      ['dividend','value'].map(function(k){
+        return '<button class="btn small '+(state.chartTab===k?"primary":"")+'" onclick="setChartTab(\''+k+'\')">'+(k==='dividend'?'Dividend income':'Portfolio value vs contributed')+'</button>';
+      }).join("")+
+    '</div>'+
+    '<div id="chartContainer"></div>'+
+  '</div>';
+
+  h+='<div class="card"><h2>Quick compounding calculator '+helpBtn("h-comp")+'</h2>'+
+    helpBox("h-comp","A standalone what-if tool, separate from your saved holdings. Change any number to explore how starting amount, monthly contribution, growth rate, or time horizon each move the outcome. Prefilled with your current blended numbers.")+
+    renderCompoundCalc(d)+
+  '</div>';
+
+  return h;
+}
+
+var compState = null; // lazily initialised from derived totals, persists across renders once touched
+function renderCompoundCalc(d){
+  if(compState===null){
+    var blendedGrowth = d.totalBalance>0 ? state.stocks.reduce(function(s,st){return s+st.balance*st.growth;},0)/d.totalBalance : 6;
+    compState = {principal:Math.round(d.totalBalance), monthly:state.monthlyContribution, rate:Math.round(blendedGrowth*10)/10, years:state.targetAge-state.currentAge};
+  }
+  var fv=compState.principal, contributed=compState.principal;
+  var mg=Math.pow(1+compState.rate/100,1/12)-1;
+  for(var m=0;m<compState.years*12;m++){ fv*=1+mg; fv+=compState.monthly; contributed+=compState.monthly; }
+  var growthPart=fv-contributed;
+  return '<div class="grid4" style="margin-bottom:12px;">'+
+    field("Starting amount","c.principal",compState.principal,"AUD","setComp('principal',this.value)")+
+    field("Monthly contribution","c.monthly",compState.monthly,"AUD","setComp('monthly',this.value)")+
+    field("Annual growth","c.rate",compState.rate,"%","setComp('rate',this.value)")+
+    field("Years","c.years",compState.years,"yrs","setComp('years',this.value)")+
+    '</div>'+
+    '<div class="grid3">'+
+      readout("Future value", fmtFull(fv),"","#4FC3D9")+
+      readout("Total contributed", fmtFull(contributed),"principal + monthly amounts","#D9A441")+
+      readout("Growth earned", fmtFull(growthPart), ((growthPart/contributed*100)||0).toFixed(0)+"% on top of what you put in","#6FBE8F")+
+    '</div>';
+}
+function setComp(field,value){ if(compState===null) return; compState[field]=parseFloat(value)||0; render(); }
+window.setComp=setComp;
+
+/* ============================== RENDER: TAX & CGT TAB ============================== */
+
+function renderTax(d){
+  var h='';
+  h+='<div class="card"><h2>Your income '+helpBtn("h-tsal")+'</h2>'+
+    helpBox("h-tsal","Your salary/other taxable income (before dividends) sets your marginal tax rate. Dividends and franking credits stack on top of this, so this one number drives every calculation on this tab.")+
+    '<div class="grid3">'+field("Salary / other taxable income","tax.salary",state.tax.salary,"AUD/yr","setField('tax.salary',this.value,true)")+'</div>'+
+  '</div>';
+
+  var creditNow = state.stocks.reduce(function(s,st){return s+st.balance*((st.yieldGrossed-st.yieldCash)/100);},0);
+  var res2026 = dividendTaxImpact(state.tax.salary, d.currentRunRateCash, creditNow, 2026);
+  var res2025 = dividendTaxImpact(state.tax.salary, d.currentRunRateCash, creditNow, 2025);
+  h+='<div class="card"><h2>Dividend tax today '+helpBtn("h-tdiv")+'</h2>'+
+    helpBox("h-tdiv","Cash dividends plus franking credits (grossed up at the 30% company tax rate) get added to your taxable income. The franking credit is then subtracted from the tax bill as an offset. If it's more than the extra tax the dividends caused, you get a net refund of the difference, this is common at lower incomes and very common with zero salary in retirement.")+
+    '<div class="grid4">'+
+      readout("Cash dividends", fmtFull(d.currentRunRateCash),"per year","#4FC3D9")+
+      readout("Franking credits", fmtFull(creditNow),"grossed-up add-back","#D9A441")+
+      readout("Assessable amount", fmtFull(res2026.grossedUp),"added to taxable income","#8593A3")+
+      readout(res2026.net<=0?"Net refund":"Net extra tax", fmtFull(Math.abs(res2026.net)),"2026-27 rates",res2026.net<=0?"#6FBE8F":"#D9695F")+
+    '</div>'+
+    '<div style="font-size:11px;color:#5B6A78;margin-top:8px;">Under 2025-26 rates this would have been '+(res2025.net<=0?"a "+fmtFull(-res2025.net)+" refund":"an extra "+fmtFull(res2025.net)+" owed")+' — the only difference is the second tax bracket (16% vs 15%).</div>'+
+  '</div>';
+
+  h+='<div class="card"><h2>CGT calculator '+helpBtn("h-cgt")+'</h2>'+
+    helpBox("h-cgt","Pick a holding, how much of it you\'d sell, and at what age. This projects the balance and cost base at that point (cost base = everything ever paid in, including reinvested dividends) and compares tax under two regimes: what the old flat 50% discount would have given you, versus the law actually passed in the 2026 Budget (Royal Assent 26 Jun 2026): the 50% discount still applies to gains that accrued before 1 July 2027, but gains after that date use CPI-indexed cost base with a 30% minimum tax rate on the real gain instead. This is a simplified average-cost model for education, not a substitute for an accountant working from your real parcels and dates.")+
+    '<div class="grid3" style="margin-bottom:12px;">'+
+      '<label class="field">Sell which holding'+
+        '<select onchange="setField(\'tax.sellStockId\',this.value)" style="background:#0F1720;border:1px solid #26333F;border-radius:6px;color:#EAF1F6;padding:6px 8px;">'+
+          state.stocks.map(function(s){ return '<option value="'+s.id+'" '+(state.tax.sellStockId===s.id?"selected":"")+'>'+esc(s.ticker)+'</option>'; }).join("")+
+        '</select></label>'+
+      field("Percent to sell","tax.sellPercent",state.tax.sellPercent,"%","setField('tax.sellPercent',this.value,true)")+
+      field("Age at sale","tax.sellAge",state.tax.sellAge,"yrs","setField('tax.sellAge',this.value,true)")+
+    '</div>'+
+    renderCgtResult(d)+
+  '</div>';
+
+  h+='<div class="card"><h2>CGT &amp; tax notes worth knowing '+helpBtn("h-cgttips")+'</h2>'+
+    helpBox("h-cgttips","General education, not personal advice. Always run actual sale decisions past an accountant, especially once real money and real dates are involved.")+
+    '<ul style="font-size:12.5px;color:#8593A3;line-height:1.7;padding-left:18px;">'+
+      '<li>The 50% CGT discount only applies to assets held over 12 months, and only to gains that accrued before 1 July 2027. There is no minimum tax on that portion.</li>'+
+      '<li>From 1 July 2027, the discount is replaced by CPI indexation of the cost base, and a 30% minimum tax applies to the real (indexed) gain, even if your marginal rate would otherwise be lower.</li>'+
+      '<li>Selling in a low-income year (career break, between jobs, early retirement) still helps for the pre-2027 portion of any gain, but the 30% floor limits how much that trick saves you on gains accruing after the reform date.</li>'+
+      '<li>Franking credits are only worth their full grossed-up value if your taxable income is low enough that year for them to be refunded in full, this is one reason early retirement years can be tax-efficient for dividend income specifically.</li>'+
+      '<li>Selling a small slice each financial year instead of one lump sum can keep you inside a lower bracket for the gain, worth modelling both ways before a big sale.</li>'+
+      '<li>This calculator assumes a simple average cost base per holding. Real portfolios often have multiple purchase parcels with different dates, which can be chosen individually at sale time to legally minimise tax, an accountant can optimise this in a way this tool cannot.</li>'+
+    '</ul>'+
+  '</div>';
+
+  return h;
+}
+
+function renderCgtResult(d){
+  var sellMonth=(state.tax.sellAge-state.currentAge)*12;
+  if(sellMonth<1){
+    return '<div class="warnbox">Sale age must be after your current age. Adjust the age above.</div>';
+  }
+  var yieldField = d.yieldField;
+  var snapArr = (yieldField==="yieldCash")?d.simCash:d.simGrossed;
+  var idx=Math.min(sellMonth, snapArr.length)-1;
+  var snapshot=snapArr[idx];
+  var frac=(state.tax.sellPercent||0)/100;
+  var cmp=cgtCompare(snapshot, state.tax.sellStockId, frac, state.tax.salary, state.inflation, sellMonth+1, d.sellFee);
+  var s=state.stocks.find(function(x){return x.id===state.tax.sellStockId;});
+  return '<div style="font-size:11.5px;color:#5B6A78;margin-bottom:8px;">At age '+state.tax.sellAge+', selling '+state.tax.sellPercent+'% of '+esc(s?s.ticker:"?")+' (projected on the '+(yieldField==="yieldCash"?"cash":"grossed-up")+' yield basis, after a '+fmtFull(d.sellFee)+' broker sell fee deducted from proceeds):</div>'+
+  '<div class="taxcompare">'+
+    '<div class="taxcol old"><h3>If 2025 rules had continued</h3>'+
+      '<div class="line"><span>Total capital gain</span><b>'+fmtFull(cmp.totalGainOld)+'</b></div>'+
+      '<div class="line"><span>After 50% discount</span><b>'+fmtFull(cmp.taxableOld)+'</b></div>'+
+      '<div class="line total"><span>CGT payable</span><b style="color:#D9695F;">'+fmtFull(cmp.taxOld)+'</b></div>'+
+    '</div>'+
+    '<div class="taxcol new"><h3>Actual 2026 law (from 1 Jul 2027)</h3>'+
+      '<div class="line"><span>Pre-reform gain (50% discount)</span><b>'+fmtFull(cmp.taxablePreDiscounted)+'</b></div>'+
+      '<div class="line"><span>Post-reform real gain (indexed)</span><b>'+fmtFull(cmp.realGainPost)+'</b></div>'+
+      '<div class="line total"><span>CGT payable</span><b style="color:#D9695F;">'+fmtFull(cmp.taxNew)+'</b></div>'+
+    '</div>'+
+  '</div>'+
+  '<div style="font-size:11.5px;color:'+(cmp.taxNew>cmp.taxOld?"#D9695F":"#6FBE8F")+';margin-top:8px;">'+
+    (cmp.taxNew>cmp.taxOld ? "Under the actual 2026 law this sale costs about "+fmtFull(cmp.taxNew-cmp.taxOld)+" more in CGT than the old rules would have." :
+     "Under the actual 2026 law this sale costs about "+fmtFull(cmp.taxOld-cmp.taxNew)+" less in CGT than the old rules would have.")+
+  '</div>';
+}
+
+/* ============================== RENDER: INSIGHTS TAB ============================== */
+
+function renderInsights(d){
+  var suggestions=[];
+  var targetMonth=d.targetMonth;
+  if(targetMonth>0 && state.stocks.length>0){
+    var yieldField=d.yieldField;
+    var currentPlanRes = yieldField==="yieldCash"?d.simCash:d.simGrossed;
+    var crossMonth = findCrossingMonth(currentPlanRes, state.targetDividend, d.inflRate);
+    var behind = !crossMonth || crossMonth>targetMonth;
+    if(behind){
+      var reqContribution = yieldField==="yieldCash"?d.reqContribCash:d.reqContribGrossed;
+      var extra = reqContribution!=null? Math.max(0, reqContribution-state.monthlyContribution) : null;
+      suggestions.push({icon:"⚡", title:"Lift contributions to hit age "+state.targetAge,
+        body: (extra!=null && extra>10) ? ("You'd need about "+fmtFull(reqContribution)+"/month combined (up from "+fmtFull(state.monthlyContribution)+") on the "+(yieldField==="yieldCash"?"cash":"grossed-up")+" basis to hit "+fmtFull(state.targetDividend)+" by age "+state.targetAge+". That's an extra "+fmtFull(extra)+"/month starting now.") : "Your current contribution is already enough on this basis.",
+        deadline:"Start now, review yearly"});
+      var lump = solveLumpSum({stocks:state.stocks, monthlyContribution:state.monthlyContribution, reallocation:d.reallocation, yieldField:yieldField, sequence:d.seq, brokerBuyFee:d.brokerBuyFee}, targetMonth, state.targetDividend, d.inflRate, d.highestYieldStock?d.highestYieldStock.id:null);
+      suggestions.push({icon:"📈", title:"One-off lump sum, same monthly contribution",
+        body:"A single lump sum of about "+fmtFull(lump)+", added today to "+(d.highestYieldStock?d.highestYieldStock.ticker:"your highest-yield holding")+", would close the gap to age "+state.targetAge+" without changing your monthly contribution.",
+        deadline:"Whenever a lump sum becomes available"});
+      suggestions.push({icon:"💰", title:"Franking credits are worth more with a lower salary",
+        body:"Your dividend tax position on the Tax & CGT tab assumes your current salary. If you drop to part-time or take a career break before hitting your target, franking credits get refunded at a higher rate, worth modelling that scenario there directly.",
+        deadline:"Model this whenever income changes"});
+    } else {
+      var surplusYears = crossMonth ? (targetMonth-crossMonth)/12 : 0;
+      var minContribution = solveMonthlyContribution({stocks:state.stocks, reallocation:d.reallocation, yieldField:yieldField, sequence:d.seq, brokerBuyFee:d.brokerBuyFee}, targetMonth, state.targetDividend, d.inflRate);
+      suggestions.push({icon:"🎯", title:"You're ahead of schedule",
+        body:"At current settings you're on track to hit the target about "+surplusYears.toFixed(1)+" years before age "+state.targetAge+". You could drop contributions to roughly "+fmtFull(minContribution)+"/month and still make it, or keep the pace and retire earlier.",
+        deadline:"Recheck this in 12 months"});
+    }
+  }
+  var sellMonth=(state.tax.sellAge-state.currentAge)*12;
+  if(sellMonth>0){
+    var beforeReform = sellMonth <= MONTHS_UNTIL_REFORM;
+    suggestions.push({icon: beforeReform?"⏳":"📊", title: beforeReform? "Your planned sale age lands before the CGT reform" : "Your planned sale age lands after the CGT reform",
+      body: beforeReform? "At age "+state.tax.sellAge+" (before 1 July 2027) any gain on the holding you've picked in the CGT calculator would still get the old 50% discount with no minimum tax floor. Selling before the cut-off, if it otherwise makes sense, locks that in." :
+        "At age "+state.tax.sellAge+" (after 1 July 2027) the gain accrued from that date is taxed on the indexed real amount with a 30% floor. Check the CGT tab to see exactly how much of the projected gain falls on each side of the line.",
+      deadline:"Review closer to age "+state.tax.sellAge});
+  }
+  if(d.feeImpact.gap>500){
+    suggestions.push({icon:"💸", title:"Fees are a real drag on this plan",
+      body:"Between "+esc(BROKER_DB[state.broker.id]?BROKER_DB[state.broker.id].name:"your broker")+" brokerage and fund management fees, this plan is projected to cost about "+fmtFull(d.feeImpact.gap)+" in portfolio value by age "+(d.targetMonth>0?state.targetAge:(state.currentAge+40))+" compared to a hypothetical zero-fee version. Consolidating contributions into fewer, larger trades (e.g. quarterly instead of monthly) cuts brokerage roughly proportionally, and switching a holding to a lower-MER equivalent (see Other holdings to consider) cuts the ongoing drag.",
+      deadline:"Review broker and fund choices anytime"});
+  }
+  suggestions.push({icon:"ℹ️", title:"Get the structure question checked",
+    body:"Whether some of this belongs inside super or an investment bond instead of your personal name depends on your income trajectory and timeline, worth a session with an accountant once you're within 5 to 10 years of the target, not now.",
+    deadline:"Revisit around age "+Math.max(state.currentAge+1, state.targetAge-8)});
+
+  var h='<div class="card"><h2>What needs to happen to reach the goal '+helpBtn("h-ins")+'</h2>'+
+    helpBox("h-ins","Recalculates as you change anything on the page. If you're behind your target age it works out the extra contribution, lump sum, or timing move needed to close the gap. If you're ahead, it tells you how much room you have.")+
+    '<div style="position:relative;padding-left:6px;">'+suggestions.map(function(s){
+      return '<div class="insight"><div class="marker">'+s.icon+'</div>'+
+        '<div class="ititle">'+esc(s.title)+'</div>'+
+        '<div class="ibody">'+esc(s.body)+'</div>'+
+        '<div class="ideadline">'+esc(s.deadline)+'</div></div>';
+    }).join("")+'</div>'+
+  '</div>';
+
+  var portfolioIdeas = Object.keys(STOCK_DB).filter(function(t){ return !state.stocks.some(function(s){return s.ticker===t;}); })
+    .map(function(t){ return Object.assign({ticker:t}, STOCK_DB[t]); }).sort(function(a,b){return b.yieldCash-a.yieldCash;});
+  h+='<div class="card"><h2>Other holdings to consider '+helpBtn("h-ideas")+'</h2>'+
+    helpBox("h-ideas","General information about how these funds have historically behaved, not a personal recommendation. Higher yield almost always trades off against diversification, growth, or concentration risk, add one via Holdings to model its real effect.")+
+    '<div class="cardsub">Your current blended cash yield is <b style="color:#EAF1F6;font-family:monospace;">'+fmtPct(d.blendedYieldCash*100)+'</b>.</div>'+
+    '<table><thead><tr><th>Ticker</th><th>What it is</th><th>Cash yield</th><th>Grossed yield</th><th>Growth</th><th>MER</th></tr></thead><tbody>'+
+    portfolioIdeas.map(function(idea){
+      return '<tr><td><b>'+esc(idea.ticker)+'</b></td><td style="color:#8593A3;max-width:220px;">'+esc(idea.note)+'</td>'+
+        '<td style="color:#4FC3D9;">'+idea.yieldCash.toFixed(1)+'%</td><td style="color:#D9A441;">'+idea.yieldGrossed.toFixed(1)+'%</td><td style="color:#6FBE8F;">'+idea.growth.toFixed(1)+'%</td>'+
+        '<td style="color:#8593A3;">'+(idea.mer||0).toFixed(2)+'%</td></tr>';
+    }).join("")+'</tbody></table>'+
+  '</div>';
+
+  return h;
+}
+
+/* ============================== RENDER: COMPARE TAB ============================== */
+
+function renderCompare(d){
+  var yieldField=d.yieldField;
+  var baseCross = yieldField==="yieldCash"?d.crossCashMonth:d.crossGrossedMonth;
+  var h='<div class="card"><h2>Scenario comparison '+helpBtn("h-scen")+
+    '<button class="btn small primary" style="margin-left:auto;" onclick="addScenario()">+ Add scenario</button></h2>'+
+    helpBox("h-scen","Test changes side by side without touching your main plan. Each row is an independent what-if: extra monthly contribution, redirecting money into a holding from a chosen age, or both.")+
+    '<table><thead><tr><th>Scenario</th><th>Extra $/mo</th><th>Reallocate to</th><th>From age</th><th>Monthly total</th><th>Years to target</th><th>Hits at age</th><th></th></tr></thead><tbody>'+
+    '<tr><td><span class="dot" style="background:#4FC3D9;"></span> Current plan</td><td>—</td>'+
+    '<td>'+(state.reallocTargets.length?state.reallocTargets.map(function(id){var s=state.stocks.find(function(x){return x.id===id;});return s?s.ticker:"";}).join(", "):"—")+'</td>'+
+    '<td>'+(state.reallocAge!=null?state.reallocAge:"—")+'</td>'+
+    '<td>'+fmtFull(state.monthlyContribution)+'</td>'+
+    '<td style="color:#6FBE8F;">'+(baseCross?(baseCross/12).toFixed(1):"40+")+'</td>'+
+    '<td>'+(baseCross?(state.currentAge+baseCross/12).toFixed(1):"—")+'</td><td></td></tr>';
+  state.scenarios.forEach(function(s){
+    var realloc = s.reallocateAge? {thresholdMonth:(s.reallocateAge-state.currentAge)*12, targetIds:[s.targetId]} : null;
+    var res=simulateMulti({stocks:state.stocks, monthlyContribution:state.monthlyContribution+s.contributionDelta, months:d.months, reallocation:realloc, yieldField:yieldField, sequence:d.seq, brokerBuyFee:d.brokerBuyFee});
+    var crossM=findCrossingMonth(res, state.targetDividend, d.inflRate);
+    h+='<tr><td><span class="dot" style="background:'+s.color+';"></span> <input type="text" value="'+esc(s.label)+'" style="width:100px;background:transparent;border:none;color:#EAF1F6;" onchange="updateScenario('+s.id+',\'label\',this.value)"/></td>'+
+      '<td><input type="number" step="50" value="'+s.contributionDelta+'" style="width:80px;" onchange="updateScenario('+s.id+',\'contributionDelta\',this.value)"/></td>'+
+      '<td><select onchange="updateScenario('+s.id+',\'targetId\',this.value)" style="background:#0F1720;border:1px solid #26333F;border-radius:6px;color:#EAF1F6;">'+
+        state.stocks.map(function(st){return '<option value="'+st.id+'" '+(s.targetId===st.id?"selected":"")+'>'+esc(st.ticker)+'</option>';}).join("")+'</select></td>'+
+      '<td><input type="number" step="1" value="'+(s.reallocateAge||"")+'" placeholder="—" style="width:60px;" onchange="updateScenario('+s.id+',\'reallocateAge\',this.value)"/></td>'+
+      '<td>'+fmtFull(state.monthlyContribution+s.contributionDelta)+'</td>'+
+      '<td style="color:#6FBE8F;">'+(crossM?(crossM/12).toFixed(1):"40+")+'</td>'+
+      '<td>'+(crossM?(state.currentAge+crossM/12).toFixed(1):"—")+'</td>'+
+      '<td><button class="btn small danger" onclick="removeScenario('+s.id+')">&times;</button></td></tr>';
+  });
+  h+='</tbody></table><div style="font-size:10px;color:#5B6A78;margin-top:6px;">Uses the '+(yieldField==="yieldCash"?"cash":"grossed-up")+' yield basis (set at the top of the page).</div></div>';
+  return h;
+}
+
+/* ============================== MAIN RENDER ============================== */
+
+function render(){
+  var d=derive();
+  var html='<div class="wrap">';
+  html+='<header class="top"><div><div class="eyebrow">Dividend &amp; FIRE Planner</div>'+
+    '<h1 class="title">Portfolio Retirement Readout</h1>'+
+    '<div class="sub">A planning and education tool for reaching a target dividend income: growth, tax and CGT included. Add what you hold, set your plan, and everything updates.</div></div>'+
+    '<div class="disclaimer">Planning &amp; education tool, not financial, tax or legal advice. Yield, growth and tax figures are assumptions and simplifications, not guarantees.</div></header>';
+  html+='<div class="privacy"><b>Runs entirely on your device.</b> No server, login or database. Nothing you type is stored or sent anywhere. Close the tab and it\'s gone unless you save your own copy of this file.</div>';
+  html+=renderSettingsBar();
+  html+=renderNav();
+  html+='<div id="tabcontent"></div>';
+  html+='<footer class="foot">All figures are projections based on assumptions you control above, not guarantees. Brokerage fees and fund management fees (MER) are rough, editable estimates, not live pricing, always confirm with your broker and the fund\'s PDS. Tax and CGT figures use a simplified average-cost-base model against the rules legislated in the 2026 Federal Budget (Royal Assent 26 Jun 2026) and are for education, not advice. Always confirm with a licensed accountant, financial adviser, or the ATO before acting.</footer>';
+  html+='</div>';
+  document.getElementById("root").innerHTML=html;
+
+  var tabHtml;
+  if(state.activeTab==="summary") tabHtml=renderSummary(d);
+  else if(state.activeTab==="holdings") tabHtml=renderHoldings(d);
+  else if(state.activeTab==="growth") tabHtml=renderGrowth(d);
+  else if(state.activeTab==="tax") tabHtml=renderTax(d);
+  else if(state.activeTab==="insights") tabHtml=renderInsights(d);
+  else if(state.activeTab==="compare") tabHtml=renderCompare(d);
+  document.getElementById("tabcontent").innerHTML=tabHtml;
+
+  if(state.activeTab==="growth"){
+    var series;
+    if(state.chartTab==="dividend"){
+      series=[];
+      if(state.yieldView!=="grossed") series.push({key:"cashDividend",name:"Cash yield",color:"#4FC3D9"});
+      if(state.yieldView!=="cash") series.push({key:"grossedDividend",name:"Grossed-up",color:"#D9A441"});
+      series.push({key:"target",name:"Target",color:"#D9695F",dash:true});
+    } else {
+      series=[{key:"cashValue",name:"Portfolio value",color:"#6FBE8F"},{key:"cashCostBase",name:"Cumulative contributed",color:"#7FA8D9",dash:true}];
+    }
+    renderLineChart("chartContainer", d.chartData, series);
+  }
+}
+
+/* ============================== INIT ============================== */
+render();
+
+})();
+</script>
+</body>
+</html>
