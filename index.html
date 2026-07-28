@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Dividend &amp; FIRE Planner</title>
-    
+
 <!-- Link to your favicon icon -->
 <link rel="icon" type="image/png" href="icon.png">
 
@@ -46,6 +46,10 @@
   .support a.sbtn.pearler{border-color:#4FC3D9;color:#4FC3D9;}
   .support a.sbtn.pearler:hover{background:rgba(79,195,217,.1);}
   .settingsbar{position:sticky;top:0;z-index:20;background:#0E1620;border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:14px;}
+  input, select{scroll-margin-top:100px;scroll-margin-bottom:120px;}
+  @media (max-width:640px){
+    .settingsbar{position:static;} /* pinning it eats the whole screen once the on-screen keyboard opens */
+  }
   .settingsbar .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;}
   .settingsbar .row2{display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-top:10px;font-size:12px;color:var(--muted);}
   nav.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;}
@@ -168,13 +172,13 @@ function incomeTax(taxableIncome, ruleYear){
 
 var state = {
   stocks: [
-    {id:1, ticker:"VAS", name:STOCK_DB.VAS.name, balance:30000, yieldCash:4, yieldGrossed:5.7, growth:4.5, mer:0.07, color:PALETTE[0]},
-    {id:2, ticker:"VGS", name:STOCK_DB.VGS.name, balance:30000, yieldCash:2, yieldGrossed:2, growth:7, mer:0.18, color:PALETTE[1]}
+    {id:1, ticker:"VAS", name:STOCK_DB.VAS.name, balance:69978, yieldCash:4, yieldGrossed:5.7, growth:4.5, mer:0.07, color:PALETTE[0]},
+    {id:2, ticker:"VGS", name:STOCK_DB.VGS.name, balance:92171, yieldCash:2, yieldGrossed:2, growth:7, mer:0.18, color:PALETTE[1]}
   ],
   broker:{id:"pearler", buyFee:BROKER_DB.pearler.buyFee, sellFee:BROKER_DB.pearler.sellFee},
   monthlyContribution:1000,
-  currentAge: 25,
-  inflation: 3,
+  currentAge:25,
+  inflation:3,
   adjustInflation:true,
   targetDividend:50000,
   targetAge:50,
@@ -335,6 +339,27 @@ function fmtCompact(n){ return new Intl.NumberFormat("en-AU",{notation:"compact"
 function fmtPct(n){ return (n||0).toFixed(1)+"%"; }
 function esc(s){ return String(s).replace(/[&<>"]/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); }
 
+/* Parses a number field as the user types. Returns null (meaning "don't commit yet, still typing")
+   for blanks/partial entries like "-", ".", "-." or anything non-numeric, so a stray keystroke never
+   snaps the field to 0 or wipes what's been typed. Only a genuinely parseable number gets clamped
+   and committed to state. */
+function parseNumInput(raw, opts){
+  opts=opts||{};
+  if(raw==null) return null;
+  raw=String(raw).trim();
+  if(raw===""||raw==="-"||raw==="."||raw==="-."||raw==="-0") return null;
+  if(!/^-?\d*\.?\d*$/.test(raw)) return null; // rejects letters/symbols outright
+  var n=parseFloat(raw);
+  if(!isFinite(n)) return null;
+  if(opts.min!=null) n=Math.max(opts.min,n);
+  if(opts.max!=null) n=Math.min(opts.max,n);
+  return n;
+}
+function cssEscape(s){
+  if(window.CSS && CSS.escape) return CSS.escape(s);
+  return String(s).replace(/[^a-zA-Z0-9_-]/g,"\\$&");
+}
+
 /* ============================== CHART (vanilla SVG) ============================== */
 
 function renderLineChart(containerId, data, series, opts){
@@ -478,7 +503,12 @@ function derive(){
 function updateStock(id, field, value){
   var s=state.stocks.find(function(x){return x.id===id;});
   if(!s) return;
-  if(field==="balance"||field==="yieldCash"||field==="yieldGrossed"||field==="growth"||field==="mer") s[field]=parseFloat(value)||0;
+  var bounds={balance:{min:0}, yieldCash:{min:0,max:100}, yieldGrossed:{min:0,max:100}, growth:{min:-50,max:100}, mer:{min:0,max:5}};
+  if(bounds[field]){
+    var n=parseNumInput(value, bounds[field]);
+    if(n===null){ render(); return; }
+    s[field]=n;
+  }
   render();
 }
 function removeStock(id){
@@ -522,9 +552,18 @@ function updateScenario(id, field, value){
   var s=state.scenarios.find(function(x){return x.id===id;});
   if(!s) return;
   if(field==="label") s.label=value;
-  else if(field==="contributionDelta") s.contributionDelta=parseFloat(value)||0;
+  else if(field==="contributionDelta"){
+    var n=parseNumInput(value,{min:-100000,max:100000});
+    if(n===null){ render(); return; }
+    s.contributionDelta=n;
+  }
   else if(field==="targetId") s.targetId=parseInt(value);
-  else if(field==="reallocateAge") s.reallocateAge = value?parseFloat(value):null;
+  else if(field==="reallocateAge"){
+    if(value===""){ s.reallocateAge=null; render(); return; }
+    var n2=parseNumInput(value,{min:0,max:120});
+    if(n2===null){ render(); return; }
+    s.reallocateAge=n2;
+  }
   render();
 }
 function setBroker(id){
@@ -539,11 +578,17 @@ function toggleHelp(id){
   var el=document.getElementById(id);
   if(el) el.classList.toggle("open");
 }
-function setField(path, value, isFloat){
+function setField(path, value, isFloat, opts){
   var parts=path.split(".");
   var obj=state;
   for(var i=0;i<parts.length-1;i++) obj=obj[parts[i]];
-  obj[parts[parts.length-1]] = isFloat? (parseFloat(value)||0) : value;
+  if(isFloat){
+    var n=parseNumInput(value, opts);
+    if(n===null){ render(); return; } // still mid-keystroke, just refresh dependent numbers, don't commit
+    obj[parts[parts.length-1]] = n;
+  } else {
+    obj[parts[parts.length-1]] = value;
+  }
   render();
 }
 function setBoolField(path, checked){
@@ -565,11 +610,11 @@ function renderSettingsBar(){
   return ''+
   '<div class="settingsbar">'+
     '<div class="grid">'+
-      field("Monthly contribution","state.monthlyContribution",state.monthlyContribution,"AUD","setField('monthlyContribution',this.value,true)")+
-      field("Current age","state.currentAge",state.currentAge,"yrs","setField('currentAge',this.value,true)")+
-      field("Inflation","state.inflation",state.inflation,"%","setField('inflation',this.value,true)")+
-      field("Target dividend","state.targetDividend",state.targetDividend,"AUD/yr","setField('targetDividend',this.value,true)")+
-      field("Retire by age","state.targetAge",state.targetAge,"yrs","setField('targetAge',this.value,true)")+
+      field("Monthly contribution","state.monthlyContribution",state.monthlyContribution,"AUD","setField('monthlyContribution',this.value,true,{min:0})")+
+      field("Current age","state.currentAge",state.currentAge,"yrs","setField('currentAge',this.value,true,{min:0,max:110})")+
+      field("Inflation","state.inflation",state.inflation,"%","setField('inflation',this.value,true,{min:-5,max:30})")+
+      field("Target dividend","state.targetDividend",state.targetDividend,"AUD/yr","setField('targetDividend',this.value,true,{min:0})")+
+      field("Retire by age","state.targetAge",state.targetAge,"yrs","setField('targetAge',this.value,true,{min:0,max:120})")+
     '</div>'+
     '<div class="row2">'+
       '<div class="pill-toggle">'+
@@ -588,7 +633,7 @@ function field(label, name, value, suffix, onchange, step){
   step = step || (suffix==="%"?"0.1":"1");
   return '<label class="field">'+esc(label)+
     '<div style="display:flex;align-items:center;gap:6px;background:#0F1720;border:1px solid #26333F;border-radius:6px;padding:4px 8px;">'+
-      '<input type="number" step="'+step+'" value="'+value+'" oninput="'+onchange+'" style="border:none;background:transparent;padding:2px 0;"/>'+
+      '<input type="text" inputmode="decimal" data-field="'+esc(name)+'" step="'+step+'" value="'+value+'" oninput="'+onchange+'" style="border:none;background:transparent;padding:2px 0;"/>'+
       (suffix?'<span style="font-size:10px;color:#5B6A78;">'+esc(suffix)+'</span>':'')+
     '</div></label>';
 }
@@ -673,17 +718,17 @@ function renderHoldings(d){
     '<table><thead><tr><th>Ticker</th><th>Balance</th><th>Cash yield</th><th>Grossed yield</th><th>Growth</th><th>MER '+helpBtn("h-mer")+'</th><th></th></tr></thead><tbody>';
   state.stocks.forEach(function(s){
     h+='<tr><td><span class="dot" style="background:'+s.color+';"></span> <b>'+esc(s.ticker)+'</b><div style="font-size:10px;color:#5B6A78;max-width:160px;">'+esc(s.name)+'</div></td>'+
-      '<td><input type="number" step="100" value="'+s.balance+'" style="width:90px;" onchange="updateStock('+s.id+',\'balance\',this.value)"/></td>'+
-      '<td><input type="number" step="0.1" value="'+s.yieldCash+'" style="width:60px;" onchange="updateStock('+s.id+',\'yieldCash\',this.value)"/>%</td>'+
-      '<td><input type="number" step="0.1" value="'+s.yieldGrossed+'" style="width:60px;" onchange="updateStock('+s.id+',\'yieldGrossed\',this.value)"/>%</td>'+
-      '<td><input type="number" step="0.1" value="'+s.growth+'" style="width:60px;" onchange="updateStock('+s.id+',\'growth\',this.value)"/>%</td>'+
-      '<td><input type="number" step="0.01" value="'+(s.mer||0)+'" style="width:55px;" onchange="updateStock('+s.id+',\'mer\',this.value)"/>%</td>'+
+      '<td><input type="text" inputmode="decimal" data-field="stock-'+s.id+'-balance" step="100" value="'+s.balance+'" style="width:90px;" onchange="updateStock('+s.id+',\'balance\',this.value)" oninput="updateStock('+s.id+',\'balance\',this.value)"/></td>'+
+      '<td><input type="text" inputmode="decimal" data-field="stock-'+s.id+'-yieldCash" step="0.1" value="'+s.yieldCash+'" style="width:60px;" onchange="updateStock('+s.id+',\'yieldCash\',this.value)" oninput="updateStock('+s.id+',\'yieldCash\',this.value)"/>%</td>'+
+      '<td><input type="text" inputmode="decimal" data-field="stock-'+s.id+'-yieldGrossed" step="0.1" value="'+s.yieldGrossed+'" style="width:60px;" onchange="updateStock('+s.id+',\'yieldGrossed\',this.value)" oninput="updateStock('+s.id+',\'yieldGrossed\',this.value)"/>%</td>'+
+      '<td><input type="text" inputmode="decimal" data-field="stock-'+s.id+'-growth" step="0.1" value="'+s.growth+'" style="width:60px;" onchange="updateStock('+s.id+',\'growth\',this.value)" oninput="updateStock('+s.id+',\'growth\',this.value)"/>%</td>'+
+      '<td><input type="text" inputmode="decimal" data-field="stock-'+s.id+'-mer" step="0.01" value="'+(s.mer||0)+'" style="width:55px;" onchange="updateStock('+s.id+',\'mer\',this.value)" oninput="updateStock('+s.id+',\'mer\',this.value)"/>%</td>'+
       '<td><button class="btn small danger" '+(state.stocks.length<=1?"disabled":"")+' onclick="removeStock('+s.id+')">Remove</button></td></tr>';
   });
   h+='</tbody></table>'+
     '<div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-top:12px;">'+
-      '<label class="field">Add ticker<input type="text" value="'+esc(state.newTicker)+'" placeholder="e.g. HLI" style="width:110px;" oninput="setField(\'newTicker\',this.value)"/></label>'+
-      '<label class="field">Starting balance<input type="number" step="100" value="'+state.newBalance+'" style="width:120px;" oninput="setField(\'newBalance\',this.value,true)"/></label>'+
+      '<label class="field">Add ticker<input type="text" data-field="newTicker" value="'+esc(state.newTicker)+'" placeholder="e.g. HLI" style="width:110px;" oninput="setField(\'newTicker\',this.value)"/></label>'+
+      '<label class="field">Starting balance<input type="text" inputmode="decimal" data-field="newBalance" step="100" value="'+state.newBalance+'" style="width:120px;" oninput="setField(\'newBalance\',this.value,true,{min:0})"/></label>'+
       '<button class="btn primary" onclick="addStock()">+ Add</button>'+
     '</div>'+
     helpBox("h-mer","The fund's management fee (MER), charged annually as a percentage of what's invested and taken out of the fund's return automatically, you never see a separate bill for it. This calculator treats it as a direct drag on growth: the compounding math uses growth minus MER as the real annual return. It doesn't reduce the dividend yield directly, since distributions are already paid net of the MER by the fund.")+
@@ -693,11 +738,11 @@ function renderHoldings(d){
     helpBox("h-broker","Pick your broker for a rough headline brokerage fee, or choose Custom and type your own. This fee is charged once for whichever holding gets bought each month (your contribution plus that quarter's reinvested dividends land in one trade), and is subtracted from what actually gets invested that month, same as it would be from your real cash outlay. It also reduces capital proceeds in the CGT calculator on the Tax tab. Fund management fees (MER) are set per holding in the table above, not here.")+
     '<div class="grid3" style="margin-bottom:10px;">'+
       '<label class="field">Broker'+
-        '<select onchange="setBroker(this.value)" style="background:#0F1720;border:1px solid #26333F;border-radius:6px;color:#EAF1F6;padding:6px 8px;">'+
+        '<select data-field="broker-id" onchange="setBroker(this.value)" style="background:#0F1720;border:1px solid #26333F;border-radius:6px;color:#EAF1F6;padding:6px 8px;">'+
           Object.keys(BROKER_DB).map(function(k){ return '<option value="'+k+'" '+(state.broker.id===k?"selected":"")+'>'+esc(BROKER_DB[k].name)+'</option>'; }).join("")+
         '</select></label>'+
-      field("Buy fee","broker.buyFee",state.broker.buyFee,"AUD/trade","setField('broker.buyFee',this.value,true)")+
-      field("Sell fee","broker.sellFee",state.broker.sellFee,"AUD/trade","setField('broker.sellFee',this.value,true)")+
+      field("Buy fee","broker.buyFee",state.broker.buyFee,"AUD/trade","setField('broker.buyFee',this.value,true,{min:0,max:500})")+
+      field("Sell fee","broker.sellFee",state.broker.sellFee,"AUD/trade","setField('broker.sellFee',this.value,true,{min:0,max:500})")+
     '</div>'+
     '<div style="font-size:11.5px;color:#8593A3;">'+esc(BROKER_DB[state.broker.id]?BROKER_DB[state.broker.id].note:"")+'</div>'+
   '</div>';
@@ -723,7 +768,7 @@ function renderHoldings(d){
   h+='<div class="card"><h2>Reallocation plan '+helpBtn("h-real")+'</h2>'+
     helpBox("h-real","Optional. From a chosen age, all new contributions (and reinvested dividends) redirect to the holdings you pick here instead of following the rotation above. Existing balances aren\'t touched, so there\'s no CGT event from this alone.")+
     '<div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end;">'+
-      '<label class="field" style="width:110px;">From age<input type="number" step="1" value="'+(state.reallocAge!=null?state.reallocAge:"")+'" oninput="setField(\'reallocAge\',this.value,true)"/></label>'+
+      '<label class="field" style="width:110px;">From age<input type="text" inputmode="decimal" data-field="reallocAge" step="1" value="'+(state.reallocAge!=null?state.reallocAge:"")+'" oninput="setField(\'reallocAge\',this.value,true,{min:0,max:120})"/></label>'+
       '<div style="display:flex;gap:6px;flex-wrap:wrap;">'+state.stocks.map(function(s){
         var on=state.reallocTargets.indexOf(s.id)>=0;
         return '<button class="btn small" style="'+(on?('border-color:'+s.color+';color:'+s.color+';background:'+s.color+'1A;'):'')+'" onclick="toggleReallocTarget('+s.id+')">'+esc(s.ticker)+'</button>';
@@ -758,6 +803,7 @@ function renderGrowth(d){
 }
 
 var compState = null; // lazily initialised from derived totals, persists across renders once touched
+var lastScrolledField = null; // guards against re-scrolling on every keystroke while typing
 function renderCompoundCalc(d){
   if(compState===null){
     var blendedGrowth = d.totalBalance>0 ? state.stocks.reduce(function(s,st){return s+st.balance*st.growth;},0)/d.totalBalance : 6;
@@ -779,7 +825,14 @@ function renderCompoundCalc(d){
       readout("Growth earned", fmtFull(growthPart), ((growthPart/contributed*100)||0).toFixed(0)+"% on top of what you put in","#6FBE8F")+
     '</div>';
 }
-function setComp(field,value){ if(compState===null) return; compState[field]=parseFloat(value)||0; render(); }
+function setComp(field,value){
+  if(compState===null) return;
+  var bounds={principal:{min:0}, monthly:{min:0}, rate:{min:-50,max:100}, years:{min:0,max:80}};
+  var n=parseNumInput(value, bounds[field]);
+  if(n===null){ render(); return; }
+  compState[field]=n;
+  render();
+}
 window.setComp=setComp;
 
 /* ============================== RENDER: TAX & CGT TAB ============================== */
@@ -788,7 +841,7 @@ function renderTax(d){
   var h='';
   h+='<div class="card"><h2>Your income '+helpBtn("h-tsal")+'</h2>'+
     helpBox("h-tsal","Your salary/other taxable income (before dividends) sets your marginal tax rate. Dividends and franking credits stack on top of this, so this one number drives every calculation on this tab.")+
-    '<div class="grid3">'+field("Salary / other taxable income","tax.salary",state.tax.salary,"AUD/yr","setField('tax.salary',this.value,true)")+'</div>'+
+    '<div class="grid3">'+field("Salary / other taxable income","tax.salary",state.tax.salary,"AUD/yr","setField('tax.salary',this.value,true,{min:0,max:5000000})")+'</div>'+
   '</div>';
 
   var creditNow = state.stocks.reduce(function(s,st){return s+st.balance*((st.yieldGrossed-st.yieldCash)/100);},0);
@@ -809,11 +862,11 @@ function renderTax(d){
     helpBox("h-cgt","Pick a holding, how much of it you\'d sell, and at what age. This projects the balance and cost base at that point (cost base = everything ever paid in, including reinvested dividends) and compares tax under two regimes: what the old flat 50% discount would have given you, versus the law actually passed in the 2026 Budget (Royal Assent 26 Jun 2026): the 50% discount still applies to gains that accrued before 1 July 2027, but gains after that date use CPI-indexed cost base with a 30% minimum tax rate on the real gain instead. This is a simplified average-cost model for education, not a substitute for an accountant working from your real parcels and dates.")+
     '<div class="grid3" style="margin-bottom:12px;">'+
       '<label class="field">Sell which holding'+
-        '<select onchange="setField(\'tax.sellStockId\',this.value)" style="background:#0F1720;border:1px solid #26333F;border-radius:6px;color:#EAF1F6;padding:6px 8px;">'+
+        '<select data-field="tax-sellStockId" onchange="setField(\'tax.sellStockId\',parseInt(this.value))" style="background:#0F1720;border:1px solid #26333F;border-radius:6px;color:#EAF1F6;padding:6px 8px;">'+
           state.stocks.map(function(s){ return '<option value="'+s.id+'" '+(state.tax.sellStockId===s.id?"selected":"")+'>'+esc(s.ticker)+'</option>'; }).join("")+
         '</select></label>'+
-      field("Percent to sell","tax.sellPercent",state.tax.sellPercent,"%","setField('tax.sellPercent',this.value,true)")+
-      field("Age at sale","tax.sellAge",state.tax.sellAge,"yrs","setField('tax.sellAge',this.value,true)")+
+      field("Percent to sell","tax.sellPercent",state.tax.sellPercent,"%","setField('tax.sellPercent',this.value,true,{min:0,max:100})")+
+      field("Age at sale","tax.sellAge",state.tax.sellAge,"yrs","setField('tax.sellAge',this.value,true,{min:0,max:120})")+
     '</div>'+
     renderCgtResult(d)+
   '</div>';
@@ -957,11 +1010,11 @@ function renderCompare(d){
     var realloc = s.reallocateAge? {thresholdMonth:(s.reallocateAge-state.currentAge)*12, targetIds:[s.targetId]} : null;
     var res=simulateMulti({stocks:state.stocks, monthlyContribution:state.monthlyContribution+s.contributionDelta, months:d.months, reallocation:realloc, yieldField:yieldField, sequence:d.seq, brokerBuyFee:d.brokerBuyFee});
     var crossM=findCrossingMonth(res, state.targetDividend, d.inflRate);
-    h+='<tr><td><span class="dot" style="background:'+s.color+';"></span> <input type="text" value="'+esc(s.label)+'" style="width:100px;background:transparent;border:none;color:#EAF1F6;" onchange="updateScenario('+s.id+',\'label\',this.value)"/></td>'+
-      '<td><input type="number" step="50" value="'+s.contributionDelta+'" style="width:80px;" onchange="updateScenario('+s.id+',\'contributionDelta\',this.value)"/></td>'+
-      '<td><select onchange="updateScenario('+s.id+',\'targetId\',this.value)" style="background:#0F1720;border:1px solid #26333F;border-radius:6px;color:#EAF1F6;">'+
+    h+='<tr><td><span class="dot" style="background:'+s.color+';"></span> <input type="text" data-field="scenario-'+s.id+'-label" value="'+esc(s.label)+'" style="width:100px;background:transparent;border:none;color:#EAF1F6;" oninput="updateScenario('+s.id+',\'label\',this.value)"/></td>'+
+      '<td><input type="text" inputmode="decimal" data-field="scenario-'+s.id+'-contributionDelta" step="50" value="'+s.contributionDelta+'" style="width:80px;" oninput="updateScenario('+s.id+',\'contributionDelta\',this.value)"/></td>'+
+      '<td><select data-field="scenario-'+s.id+'-targetId" onchange="updateScenario('+s.id+',\'targetId\',this.value)" style="background:#0F1720;border:1px solid #26333F;border-radius:6px;color:#EAF1F6;">'+
         state.stocks.map(function(st){return '<option value="'+st.id+'" '+(s.targetId===st.id?"selected":"")+'>'+esc(st.ticker)+'</option>';}).join("")+'</select></td>'+
-      '<td><input type="number" step="1" value="'+(s.reallocateAge||"")+'" placeholder="—" style="width:60px;" onchange="updateScenario('+s.id+',\'reallocateAge\',this.value)"/></td>'+
+      '<td><input type="text" inputmode="decimal" data-field="scenario-'+s.id+'-reallocateAge" step="1" value="'+(s.reallocateAge||"")+'" placeholder="—" style="width:60px;" oninput="updateScenario('+s.id+',\'reallocateAge\',this.value)"/></td>'+
       '<td>'+fmtFull(state.monthlyContribution+s.contributionDelta)+'</td>'+
       '<td style="color:#6FBE8F;">'+(crossM?(crossM/12).toFixed(1):"40+")+'</td>'+
       '<td>'+(crossM?(state.currentAge+crossM/12).toFixed(1):"—")+'</td>'+
@@ -974,14 +1027,25 @@ function renderCompare(d){
 /* ============================== MAIN RENDER ============================== */
 
 function render(){
+  // capture focus state before the DOM gets rebuilt, so we can restore it afterwards
+  var active=document.activeElement, focusInfo=null;
+  if(active && active.dataset && active.dataset.field){
+    focusInfo={
+      field:active.dataset.field,
+      rawValue:("value" in active)?active.value:null,
+      selStart:(typeof active.selectionStart==="number")?active.selectionStart:null,
+      selEnd:(typeof active.selectionEnd==="number")?active.selectionEnd:null
+    };
+  }
+
   var d=derive();
   var html='<div class="wrap">';
   html+='<header class="top"><div><div class="eyebrow">Dividend &amp; FIRE Planner</div>'+
     '<h1 class="title">Portfolio Retirement Readout</h1>'+
     '<div class="sub">A planning and education tool for reaching a target dividend income: growth, tax and CGT included. Add what you hold, set your plan, and everything updates.</div></div>'+
     '<div class="disclaimer">Planning &amp; education tool, not financial, tax or legal advice. Yield, growth and tax figures are assumptions and simplifications, not guarantees.</div></header>';
-  html+='<div class="privacy">"I built this for my own FIRE planning and figured others might find it useful. <b>It\'s free, runs entirely in your browser, nothing you enter is stored or sent anywhere, no server, no database.</b> Close the tab and it\'s gone unless you save your own copy of this file. This calculator is for general information, not financial advice, check with an accountant before making any decisions."</div>';
-  html+='<div class="support"><div class="stext">Built and shared for free by a fellow FIRE-chaser. If it saved you some spreadsheet time, feel free to <b>buy me a coffee</b>, totally optional. I also use <b>Pearler</b> for my own ETF buys - if you are after a broker, the link below is a referral (we both get a small bonus if you sign up through it, disclosed because that is the honest way to do it).</div><div class="sbuttons"><a class="sbtn kofi" href="https://ko-fi.com/jordanscruffy" target="_blank" rel="noopener noreferrer">☕ Buy me a coffee</a><a class="sbtn pearler" href="https://mobile.pearler.com/invited/JORDAN63178" target="_blank" rel="noopener noreferrer">📈 Try Pearler (referral)</a></div></div>';
+  html+='<div class="privacy">I built this for my own financial independence, retire early (FIRE) planning and figured others might find it useful. <b>It\'s free, runs entirely in your browser, nothing you enter is stored or sent anywhere, no server, no database.</b> Close the tab and it\'s gone unless you save your own copy of this file. This calculator is for general information, not financial advice, check with an accountant before making any decisions.</div>';
+  html+='<div class="support"><div class="stext">Built and shared for free by a fellow FIRE-chaser. If it saved you some spreadsheet time, feel free to <b>buy me a tea (not a coffee drinker)</b>, totally optional. I also use <b>Pearler</b> for my own ETF buys - if you are after a broker, the link below is a referral (we both get a small bonus if you sign up through it and start trading, just being up-front.</div><div class="sbuttons"><a class="sbtn kofi" href="https://ko-fi.com/jordanscruffy" target="_blank" rel="noopener noreferrer">☕ Buy me a tea</a><a class="sbtn pearler" href="https://mobile.pearler.com/invited/JORDAN63178" target="_blank" rel="noopener noreferrer">📈 Try Pearler (referral)</a></div></div>';
   html+=renderSettingsBar();
   html+=renderNav();
   html+='<div id="tabcontent"></div>';
@@ -1009,6 +1073,33 @@ function render(){
       series=[{key:"cashValue",name:"Portfolio value",color:"#6FBE8F"},{key:"cashCostBase",name:"Cumulative contributed",color:"#7FA8D9",dash:true}];
     }
     renderLineChart("chartContainer", d.chartData, series);
+  }
+
+  // restore focus/cursor to whatever field the user was mid-typing in, so the on-screen keyboard
+  // never closes just because a keystroke triggered a recalculation
+  if(focusInfo){
+    var el=document.querySelector('[data-field="'+cssEscape(focusInfo.field)+'"]');
+    if(el){
+      el.focus();
+      if("value" in el && focusInfo.rawValue!=null && el.value!==focusInfo.rawValue){
+        el.value=focusInfo.rawValue; // keep exactly what the user typed even if it wasn't committed to state yet
+      }
+      if(focusInfo.selStart!=null){
+        try{ el.setSelectionRange(focusInfo.selStart, focusInfo.selEnd); }catch(e){ /* some input types don't support this */ }
+      }
+      // guarantee the field is visible above the on-screen keyboard the moment it's tapped, but only
+      // scroll on that first focus, not on every keystroke re-render, or scrolling while typing gets jumpy
+      if(lastScrolledField!==focusInfo.field){
+        try{
+          if(el.scrollIntoView) el.scrollIntoView({block:"center", inline:"nearest"});
+        }catch(e){
+          if(el.scrollIntoView) el.scrollIntoView();
+        }
+        lastScrolledField=focusInfo.field;
+      }
+    }
+  } else {
+    lastScrolledField=null;
   }
 }
 
