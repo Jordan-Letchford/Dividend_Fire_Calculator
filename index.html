@@ -15,7 +15,8 @@
     --cyan:#4FC3D9; --gold:#D9A441; --green:#6FBE8F; --red:#D9695F; --purple:#B48FD9;
   }
   *{box-sizing:border-box;}
-  body{margin:0;background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;line-height:1.45;}
+  html{overflow-x:hidden;}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;line-height:1.45;overflow-x:hidden;}
   h1,h2,h3{font-family:'Segoe UI',system-ui,sans-serif;margin:0;}
   input[type=number], input[type=text]{background:var(--panel2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 8px;font-family:'Courier New',monospace;font-size:13px;width:100%;}
   input[type=number]:focus, input[type=text]:focus{outline:none;border-color:var(--cyan);}
@@ -63,8 +64,17 @@
   .helpbox{display:none;background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:11.5px;color:var(--muted);margin:8px 0;line-height:1.5;}
   .helpbox.open{display:block;}
   table{width:100%;border-collapse:collapse;font-size:12px;}
-  th{text-align:left;color:var(--muted);font-weight:500;border-bottom:1px solid var(--border);padding:6px 8px 6px 0;font-size:11px;text-transform:uppercase;letter-spacing:.02em;}
+  th{text-align:left;color:var(--muted);font-weight:500;border-bottom:1px solid var(--border);padding:6px 8px 6px 0;font-size:11px;text-transform:uppercase;letter-spacing:.02em;white-space:nowrap;}
   td{padding:6px 8px 6px 0;border-bottom:1px solid #1E2A35;vertical-align:top;}
+  .table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -2px;padding:0 2px;}
+  .table-scroll table{min-width:600px;}
+  .table-scroll.wide table{min-width:760px;}
+  .scrollhint{display:none;font-size:10px;color:var(--dim);margin-bottom:6px;}
+  @media (max-width:640px){
+    .scrollhint{display:block;}
+    .table-scroll table{font-size:11px;}
+    .table-scroll th, .table-scroll td{padding:5px 6px 5px 0;}
+  }
   .grid4{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;}
   .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;}
   .grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;}
@@ -172,8 +182,8 @@ function incomeTax(taxableIncome, ruleYear){
 
 var state = {
   stocks: [
-    {id:1, ticker:"VAS", name:STOCK_DB.VAS.name, balance:10000, yieldCash:4, yieldGrossed:5.7, growth:4.5, mer:0.07, color:PALETTE[0]},
-    {id:2, ticker:"VGS", name:STOCK_DB.VGS.name, balance:10000, yieldCash:2, yieldGrossed:2, growth:7, mer:0.18, color:PALETTE[1]}
+    {id:1, ticker:"VAS", name:STOCK_DB.VAS.name, balance:1000, yieldCash:4, yieldGrossed:5.7, growth:4.5, mer:0.07, color:PALETTE[0]},
+    {id:2, ticker:"VGS", name:STOCK_DB.VGS.name, balance:1000, yieldCash:2, yieldGrossed:2, growth:7, mer:0.18, color:PALETTE[1]}
   ],
   broker:{id:"pearler", buyFee:BROKER_DB.pearler.buyFee, sellFee:BROKER_DB.pearler.sellFee},
   monthlyContribution:1000,
@@ -193,7 +203,7 @@ var state = {
   newTicker:"",
   newBalance:0,
   tax:{
-    salary:100000,
+    salary:90000,
     sellStockId:null,   // set on init
     sellPercent:100,
     sellAge:50
@@ -551,7 +561,13 @@ function removeScenario(id){ state.scenarios=state.scenarios.filter(function(s){
 function updateScenario(id, field, value){
   var s=state.scenarios.find(function(x){return x.id===id;});
   if(!s) return;
-  if(field==="label") s.label=value;
+  if(field==="label"){
+    // purely cosmetic, nothing else on the page reads it, so skip the re-render entirely: rebuilding
+    // this input's DOM node on every keystroke was breaking mobile keyboard autocomplete/composition,
+    // which is what caused typing to appear "stuck" after the first letter
+    s.label=value;
+    return;
+  }
   else if(field==="contributionDelta"){
     var n=parseNumInput(value,{min:-100000,max:100000});
     if(n===null){ render(); return; }
@@ -715,17 +731,19 @@ function renderHoldings(d){
   h+='<div class="card"><h2>Holdings '+helpBtn("h-hold")+'</h2>'+
     helpBox("h-hold","Add each stock or ETF you hold, or are considering. Known tickers auto-fill estimated yield, growth and management fee (MER) figures, unknown ones get a generic placeholder you should edit. Everything else on the page, including the projections and the fee impact below, is built from this table.")+
     '<div class="warnbox">Auto-filled figures are rough planning estimates, not live data. Verify against the fund\'s current fact sheet (PDS).</div>'+
+    '<div class="scrollhint">&larr; swipe to see all columns &rarr;</div>'+
+    '<div class="table-scroll wide">'+
     '<table><thead><tr><th>Ticker</th><th>Balance</th><th>Cash yield</th><th>Grossed yield</th><th>Growth</th><th>MER '+helpBtn("h-mer")+'</th><th></th></tr></thead><tbody>';
   state.stocks.forEach(function(s){
     h+='<tr><td><span class="dot" style="background:'+s.color+';"></span> <b>'+esc(s.ticker)+'</b><div style="font-size:10px;color:#5B6A78;max-width:160px;">'+esc(s.name)+'</div></td>'+
-      '<td><input type="text" inputmode="decimal" data-field="stock-'+s.id+'-balance" step="100" value="'+s.balance+'" style="width:90px;" onchange="updateStock('+s.id+',\'balance\',this.value)" oninput="updateStock('+s.id+',\'balance\',this.value)"/></td>'+
-      '<td><input type="text" inputmode="decimal" data-field="stock-'+s.id+'-yieldCash" step="0.1" value="'+s.yieldCash+'" style="width:60px;" onchange="updateStock('+s.id+',\'yieldCash\',this.value)" oninput="updateStock('+s.id+',\'yieldCash\',this.value)"/>%</td>'+
-      '<td><input type="text" inputmode="decimal" data-field="stock-'+s.id+'-yieldGrossed" step="0.1" value="'+s.yieldGrossed+'" style="width:60px;" onchange="updateStock('+s.id+',\'yieldGrossed\',this.value)" oninput="updateStock('+s.id+',\'yieldGrossed\',this.value)"/>%</td>'+
-      '<td><input type="text" inputmode="decimal" data-field="stock-'+s.id+'-growth" step="0.1" value="'+s.growth+'" style="width:60px;" onchange="updateStock('+s.id+',\'growth\',this.value)" oninput="updateStock('+s.id+',\'growth\',this.value)"/>%</td>'+
-      '<td><input type="text" inputmode="decimal" data-field="stock-'+s.id+'-mer" step="0.01" value="'+(s.mer||0)+'" style="width:55px;" onchange="updateStock('+s.id+',\'mer\',this.value)" oninput="updateStock('+s.id+',\'mer\',this.value)"/>%</td>'+
+      '<td><input type="text" inputmode="decimal" data-field="stock-'+s.id+'-balance" step="100" value="'+s.balance+'" style="width:90px;" oninput="updateStock('+s.id+',\'balance\',this.value)"/></td>'+
+      '<td><input type="text" inputmode="decimal" data-field="stock-'+s.id+'-yieldCash" step="0.1" value="'+s.yieldCash+'" style="width:60px;" oninput="updateStock('+s.id+',\'yieldCash\',this.value)"/>%</td>'+
+      '<td><input type="text" inputmode="decimal" data-field="stock-'+s.id+'-yieldGrossed" step="0.1" value="'+s.yieldGrossed+'" style="width:60px;" oninput="updateStock('+s.id+',\'yieldGrossed\',this.value)"/>%</td>'+
+      '<td><input type="text" inputmode="decimal" data-field="stock-'+s.id+'-growth" step="0.1" value="'+s.growth+'" style="width:60px;" oninput="updateStock('+s.id+',\'growth\',this.value)"/>%</td>'+
+      '<td><input type="text" inputmode="decimal" data-field="stock-'+s.id+'-mer" step="0.01" value="'+(s.mer||0)+'" style="width:55px;" oninput="updateStock('+s.id+',\'mer\',this.value)"/>%</td>'+
       '<td><button class="btn small danger" '+(state.stocks.length<=1?"disabled":"")+' onclick="removeStock('+s.id+')">Remove</button></td></tr>';
   });
-  h+='</tbody></table>'+
+  h+='</tbody></table></div>'+
     '<div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-top:12px;">'+
       '<label class="field">Add ticker<input type="text" data-field="newTicker" value="'+esc(state.newTicker)+'" placeholder="e.g. HLI" style="width:110px;" oninput="setField(\'newTicker\',this.value)"/></label>'+
       '<label class="field">Starting balance<input type="text" inputmode="decimal" data-field="newBalance" step="100" value="'+state.newBalance+'" style="width:120px;" oninput="setField(\'newBalance\',this.value,true,{min:0})"/></label>'+
@@ -807,7 +825,7 @@ var lastScrolledField = null; // guards against re-scrolling on every keystroke 
 function renderCompoundCalc(d){
   if(compState===null){
     var blendedGrowth = d.totalBalance>0 ? state.stocks.reduce(function(s,st){return s+st.balance*st.growth;},0)/d.totalBalance : 6;
-    compState = {principal:Math.round(d.totalBalance), monthly:state.monthlyContribution, rate:Math.round(blendedGrowth*10)/10, years:state.targetAge-state.currentAge};
+    compState = {principal:10000, monthly:state.monthlyContribution, rate:Math.round(blendedGrowth*10)/10, years:state.targetAge-state.currentAge};
   }
   var fv=compState.principal, contributed=compState.principal;
   var mg=Math.pow(1+compState.rate/100,1/12)-1;
@@ -980,12 +998,14 @@ function renderInsights(d){
   h+='<div class="card"><h2>Other holdings to consider '+helpBtn("h-ideas")+'</h2>'+
     helpBox("h-ideas","General information about how these funds have historically behaved, not a personal recommendation. Higher yield almost always trades off against diversification, growth, or concentration risk, add one via Holdings to model its real effect.")+
     '<div class="cardsub">Your current blended cash yield is <b style="color:#EAF1F6;font-family:monospace;">'+fmtPct(d.blendedYieldCash*100)+'</b>.</div>'+
+    '<div class="scrollhint">&larr; swipe to see all columns &rarr;</div>'+
+    '<div class="table-scroll">'+
     '<table><thead><tr><th>Ticker</th><th>What it is</th><th>Cash yield</th><th>Grossed yield</th><th>Growth</th><th>MER</th></tr></thead><tbody>'+
     portfolioIdeas.map(function(idea){
       return '<tr><td><b>'+esc(idea.ticker)+'</b></td><td style="color:#8593A3;max-width:220px;">'+esc(idea.note)+'</td>'+
         '<td style="color:#4FC3D9;">'+idea.yieldCash.toFixed(1)+'%</td><td style="color:#D9A441;">'+idea.yieldGrossed.toFixed(1)+'%</td><td style="color:#6FBE8F;">'+idea.growth.toFixed(1)+'%</td>'+
         '<td style="color:#8593A3;">'+(idea.mer||0).toFixed(2)+'%</td></tr>';
-    }).join("")+'</tbody></table>'+
+    }).join("")+'</tbody></table></div>'+
   '</div>';
 
   return h;
@@ -999,6 +1019,8 @@ function renderCompare(d){
   var h='<div class="card"><h2>Scenario comparison '+helpBtn("h-scen")+
     '<button class="btn small primary" style="margin-left:auto;" onclick="addScenario()">+ Add scenario</button></h2>'+
     helpBox("h-scen","Test changes side by side without touching your main plan. Each row is an independent what-if: extra monthly contribution, redirecting money into a holding from a chosen age, or both.")+
+    '<div class="scrollhint">&larr; swipe to see all columns &rarr;</div>'+
+    '<div class="table-scroll wide">'+
     '<table><thead><tr><th>Scenario</th><th>Extra $/mo</th><th>Reallocate to</th><th>From age</th><th>Monthly total</th><th>Years to target</th><th>Hits at age</th><th></th></tr></thead><tbody>'+
     '<tr><td><span class="dot" style="background:#4FC3D9;"></span> Current plan</td><td>—</td>'+
     '<td>'+(state.reallocTargets.length?state.reallocTargets.map(function(id){var s=state.stocks.find(function(x){return x.id===id;});return s?s.ticker:"";}).join(", "):"—")+'</td>'+
@@ -1020,7 +1042,7 @@ function renderCompare(d){
       '<td>'+(crossM?(state.currentAge+crossM/12).toFixed(1):"—")+'</td>'+
       '<td><button class="btn small danger" onclick="removeScenario('+s.id+')">&times;</button></td></tr>';
   });
-  h+='</tbody></table><div style="font-size:10px;color:#5B6A78;margin-top:6px;">Uses the '+(yieldField==="yieldCash"?"cash":"grossed-up")+' yield basis (set at the top of the page).</div></div>';
+  h+='</tbody></table></div><div style="font-size:10px;color:#5B6A78;margin-top:6px;">Uses the '+(yieldField==="yieldCash"?"cash":"grossed-up")+' yield basis (set at the top of the page).</div></div>';
   return h;
 }
 
