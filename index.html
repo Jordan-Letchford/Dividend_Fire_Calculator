@@ -68,7 +68,7 @@
   td{padding:6px 8px 6px 0;border-bottom:1px solid #1E2A35;vertical-align:top;}
   .table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -2px;padding:0 2px;}
   .table-scroll table{min-width:600px;}
-  .table-scroll.wide table{min-width:760px;}
+  .table-scroll.wide table{min-width:860px;}
   .scrollhint{display:none;font-size:10px;color:var(--dim);margin-bottom:6px;}
   @media (max-width:640px){
     .scrollhint{display:block;}
@@ -134,19 +134,58 @@ function monthsBetween(a,b){ return (b.getFullYear()-a.getFullYear())*12 + (b.ge
 var MONTHS_UNTIL_REFORM = monthsBetween(TODAY, REFORM_DATE); // ~11
 
 var STOCK_DB = {
-  VAS:{name:"Vanguard Australian Shares Index ETF", yieldCash:4, yieldGrossed:5.7, growth:4.5, mer:0.07, note:"Broad ASX 300 exposure, solid franking, moderate growth"},
-  VGS:{name:"Vanguard MSCI World ex-Australia ETF", yieldCash:2, yieldGrossed:2, growth:7, mer:0.18, note:"Global developed markets, low yield, growth-tilted, unfranked"},
-  VDHG:{name:"Vanguard Diversified High Growth ETF", yieldCash:3.4, yieldGrossed:4.3, growth:6, mer:0.27, note:"All-in-one diversified fund, 90% growth assets"},
-  VHY:{name:"Vanguard Australian Shares High Yield ETF", yieldCash:3.6, yieldGrossed:5.1, growth:3.5, mer:0.25, note:"Tilts toward high-dividend AU payers, less diversified than VAS"},
-  A200:{name:"BetaShares Australia 200 ETF", yieldCash:3.8, yieldGrossed:5.4, growth:4.5, mer:0.04, note:"Similar to VAS, lower fee, ASX 200 only"},
-  IVV:{name:"iShares S&P 500 ETF (AU)", yieldCash:1.2, yieldGrossed:1.2, growth:8.5, mer:0.04, note:"US large-cap, low yield, strong historical growth, unfranked"},
-  NDQ:{name:"BetaShares NASDAQ 100 ETF", yieldCash:0.5, yieldGrossed:0.5, growth:10, mer:0.48, note:"US tech-heavy, very low yield, high growth and volatility"},
-  VAP:{name:"Vanguard Australian Property Securities ETF", yieldCash:4.5, yieldGrossed:4.8, growth:3, mer:0.23, note:"AU listed property (REITs), interest-rate sensitive"},
-  VEU:{name:"Vanguard All-World ex-US ETF", yieldCash:2.8, yieldGrossed:2.8, growth:6, mer:0.08, note:"Diversifies away from US-heavy funds like VGS, unfranked"},
-  VGE:{name:"Vanguard FTSE Emerging Markets ETF", yieldCash:2.6, yieldGrossed:2.6, growth:5.5, mer:0.48, note:"Emerging markets, higher volatility and currency risk"},
-  HLI:{name:"Helia Group Ltd", yieldCash:5.7, yieldGrossed:7.6, growth:3, mer:0, note:"Single company (mortgage insurer), higher yield but no diversification, no management fee since it isn't a fund"}
+  VAS:{name:"Vanguard Australian Shares Index ETF", yieldCash:4, yieldGrossed:5.7, growth:4.5, mer:0.07, isETF:true, note:"Broad ASX 300 exposure, solid franking, moderate growth"},
+  VGS:{name:"Vanguard MSCI World ex-Australia ETF", yieldCash:2, yieldGrossed:2, growth:7, mer:0.18, isETF:true, note:"Global developed markets, low yield, growth-tilted, unfranked"},
+  VDHG:{name:"Vanguard Diversified High Growth ETF", yieldCash:3.4, yieldGrossed:4.3, growth:6, mer:0.27, isETF:true, note:"All-in-one diversified fund, 90% growth assets"},
+  VHY:{name:"Vanguard Australian Shares High Yield ETF", yieldCash:3.6, yieldGrossed:5.1, growth:3.5, mer:0.25, isETF:true, note:"Tilts toward high-dividend AU payers, less diversified than VAS"},
+  A200:{name:"BetaShares Australia 200 ETF", yieldCash:3.8, yieldGrossed:5.4, growth:4.5, mer:0.04, isETF:true, note:"Similar to VAS, lower fee, ASX 200 only"},
+  IOZ:{name:"iShares Core S&P/ASX 200 ETF", yieldCash:3.8, yieldGrossed:5.3, growth:4.5, mer:0.05, isETF:true, note:"Similar to VAS/A200, ASX 200 only, low fee"},
+  STW:{name:"SPDR S&P/ASX 200 Fund", yieldCash:3.7, yieldGrossed:5.2, growth:4.5, mer:0.13, isETF:true, note:"One of the oldest AU index ETFs, ASX 200 only, slightly higher fee"},
+  MVW:{name:"VanEck Australian Equal Weight ETF", yieldCash:4, yieldGrossed:5.6, growth:4, mer:0.35, isETF:true, note:"Equal-weights holdings instead of market-cap weighting, less bank/mining concentration"},
+  IVV:{name:"iShares S&P 500 ETF (AU)", yieldCash:1.2, yieldGrossed:1.2, growth:8.5, mer:0.04, isETF:true, note:"US large-cap, low yield, strong historical growth, unfranked"},
+  VTS:{name:"Vanguard US Total Market Shares Index ETF", yieldCash:1.1, yieldGrossed:1.1, growth:8.5, mer:0.03, isETF:true, note:"Broader than IVV (includes mid/small-cap US), low yield, unfranked"},
+  NDQ:{name:"BetaShares NASDAQ 100 ETF", yieldCash:0.5, yieldGrossed:0.5, growth:10, mer:0.48, isETF:true, note:"US tech-heavy, very low yield, high growth and volatility"},
+  QUAL:{name:"VanEck MSCI International Quality ETF", yieldCash:1.3, yieldGrossed:1.3, growth:8, mer:0.4, isETF:true, note:"Global large-caps screened for quality factors, low yield, unfranked"},
+  MOAT:{name:"VanEck Morningstar Wide Moat ETF", yieldCash:0.8, yieldGrossed:0.8, growth:8, mer:0.49, isETF:true, note:"US companies with durable competitive advantages, low yield, unfranked"},
+  ETHI:{name:"BetaShares Global Sustainability Leaders ETF", yieldCash:0.7, yieldGrossed:0.7, growth:8, mer:0.59, isETF:true, note:"Ethical/ESG screened global shares, low yield, unfranked"},
+  VAP:{name:"Vanguard Australian Property Securities ETF", yieldCash:4.5, yieldGrossed:4.8, growth:3, mer:0.23, isETF:true, note:"AU listed property (REITs), interest-rate sensitive"},
+  VEU:{name:"Vanguard All-World ex-US ETF", yieldCash:2.8, yieldGrossed:2.8, growth:6, mer:0.08, isETF:true, note:"Diversifies away from US-heavy funds like VGS, unfranked"},
+  VGE:{name:"Vanguard FTSE Emerging Markets ETF", yieldCash:2.6, yieldGrossed:2.6, growth:5.5, mer:0.48, isETF:true, note:"Emerging markets, higher volatility and currency risk"},
+  VAF:{name:"Vanguard Australian Fixed Interest Index ETF", yieldCash:3.8, yieldGrossed:3.8, growth:1, mer:0.2, isETF:true, note:"AU bonds, low growth, defensive/income asset not a growth holding"},
+  VGB:{name:"Vanguard Australian Government Bond Index ETF", yieldCash:3.5, yieldGrossed:3.5, growth:0.5, mer:0.2, isETF:true, note:"Government bonds only, defensive, lowest-risk income in this list"},
+  AAA:{name:"BetaShares Australian High Interest Cash ETF", yieldCash:4, yieldGrossed:4, growth:0, mer:0.18, isETF:true, note:"Cash-like ETF, near-zero capital growth, used for stability not growth"},
+  SYI:{name:"SPDR MSCI Australia Select High Dividend Yield Fund", yieldCash:5.2, yieldGrossed:7.2, growth:2, mer:0.35, isETF:true, note:"Screens for high, sustainable dividends, more concentrated than VAS, financials/mining heavy"},
+  IHD:{name:"iShares S&P/ASX Dividend Opportunities ETF", yieldCash:5, yieldGrossed:6.9, growth:2, mer:0.3, isETF:true, note:"High-yield AU dividend screen, concentrated, similar trade-off to SYI/VHY"},
+  HVST:{name:"BetaShares Australian Dividend Harvester Fund", yieldCash:7.5, yieldGrossed:8.5, growth:-1, mer:0.9, isETF:true, note:"Covered-call income fund: yield is generated partly by capping capital growth, not just from underlying dividends"},
+  YMAX:{name:"BetaShares Australian Top 20 Equity Yield Maximiser Fund", yieldCash:8.5, yieldGrossed:10, growth:-2, mer:0.68, isETF:true, note:"Covered-call on ASX top 20, very high yield but growth is deliberately capped, concentrated in a handful of large caps"},
+  HYLD:{name:"BetaShares Australian Major Bank Hybrids Index ETF", yieldCash:5.5, yieldGrossed:5.5, growth:0.5, mer:0.45, isETF:true, note:"Bank hybrid securities, income-focused, concentrated entirely in the big four banks, different risk profile to equities"},
+  HLI:{name:"Helia Group Ltd", yieldCash:5.7, yieldGrossed:7.6, growth:3, mer:0, isETF:false, note:"Single company (mortgage insurer), higher yield but no diversification, no management fee since it isn't a fund"},
+  CBA:{name:"Commonwealth Bank of Australia", yieldCash:3.2, yieldGrossed:4.6, growth:6, mer:0, isETF:false, note:"Single company (largest AU bank), fully franked, no management fee, concentration risk"},
+  BHP:{name:"BHP Group Ltd", yieldCash:4.8, yieldGrossed:6.5, growth:3, mer:0, isETF:false, note:"Single company (mining), fully franked, dividend varies a lot with commodity prices"},
+  CSL:{name:"CSL Limited", yieldCash:1.1, yieldGrossed:1.5, growth:8, mer:0, isETF:false, note:"Single company (biotech), low yield, growth-focused, partly franked"},
+  WES:{name:"Wesfarmers Ltd", yieldCash:2.8, yieldGrossed:4, growth:6, mer:0, isETF:false, note:"Single company (retail conglomerate, Bunnings/Kmart/Officeworks), fully franked"}
 };
-var GENERIC_DEFAULT = {name:"Unrecognised ticker", yieldCash:3, yieldGrossed:3.5, growth:6, mer:0.2, note:"Placeholder figures — edit these"};
+var GENERIC_DEFAULT = {name:"Unrecognised ticker", yieldCash:3, yieldGrossed:3.5, growth:6, mer:0.2, isETF:null, note:"Placeholder figures — edit these"};
+
+/* Builds a link to the ASX quote page for a ticker. ASX splits its site into two separate templates:
+   /markets/etp/{code} for ETFs and other exchange-traded products, /markets/company/{code} for
+   individual companies. There's no single URL that resolves both, and getting it wrong returns a
+   dead page, so when the type is known (isETF true/false) we link straight to the right one. When
+   it's unknown (a manually typed ticker not in the database) we show both options rather than guess
+   and risk a broken link. */
+function asxUrl(ticker, isETF){
+  var t=encodeURIComponent(String(ticker).toUpperCase());
+  return "https://www.asx.com.au/markets/"+(isETF?"etp":"company")+"/"+t;
+}
+function asxLinkHtml(ticker, isETF){
+  if(isETF===true || isETF===false){
+    return '<a href="'+asxUrl(ticker,isETF)+'" target="_blank" rel="noopener" class="btn small" style="text-decoration:none;">View on ASX &#8599;</a>';
+  }
+  return '<span style="display:inline-flex;gap:4px;flex-wrap:wrap;">'+
+    '<a href="'+asxUrl(ticker,true)+'" target="_blank" rel="noopener" class="btn small" style="text-decoration:none;">As fund/ETF &#8599;</a>'+
+    '<a href="'+asxUrl(ticker,false)+'" target="_blank" rel="noopener" class="btn small" style="text-decoration:none;">As company &#8599;</a>'+
+  '</span>';
+}
 
 /* Flat-fee broker presets. Figures are rough, publicly-advertised headline rates as at mid-2026 for a
    typical few-thousand-dollar ETF order, editable once selected since real pricing can be tiered. */
@@ -182,8 +221,8 @@ function incomeTax(taxableIncome, ruleYear){
 
 var state = {
   stocks: [
-    {id:1, ticker:"VAS", name:STOCK_DB.VAS.name, balance:1000, yieldCash:4, yieldGrossed:5.7, growth:4.5, mer:0.07, color:PALETTE[0]},
-    {id:2, ticker:"VGS", name:STOCK_DB.VGS.name, balance:1000, yieldCash:2, yieldGrossed:2, growth:7, mer:0.18, color:PALETTE[1]}
+    {id:1, ticker:"VAS", name:STOCK_DB.VAS.name, balance:10000, yieldCash:4, yieldGrossed:5.7, growth:4.5, mer:0.07, color:PALETTE[0], isETF:true},
+    {id:2, ticker:"VGS", name:STOCK_DB.VGS.name, balance:10000, yieldCash:2, yieldGrossed:2, growth:7, mer:0.18, color:PALETTE[1], isETF:true}
   ],
   broker:{id:"pearler", buyFee:BROKER_DB.pearler.buyFee, sellFee:BROKER_DB.pearler.sellFee},
   monthlyContribution:1000,
@@ -201,7 +240,7 @@ var state = {
   activeTab:"summary",
   chartTab:"dividend",
   newTicker:"",
-  newBalance:0,
+  newBalance:1000,
   tax:{
     salary:90000,
     sellStockId:null,   // set on init
@@ -345,6 +384,7 @@ function cgtCompare(snapshot, stockId, sellFraction, salary, inflationPct, sellM
 /* ============================== FORMAT HELPERS ============================== */
 
 function fmtFull(n){ return new Intl.NumberFormat("en-AU",{style:"currency",currency:"AUD",maximumFractionDigits:0}).format(n||0); }
+function fmtPrecise(n){ return new Intl.NumberFormat("en-AU",{style:"currency",currency:"AUD",minimumFractionDigits:2,maximumFractionDigits:2}).format(n||0); }
 function fmtCompact(n){ return new Intl.NumberFormat("en-AU",{notation:"compact",maximumFractionDigits:1}).format(n||0); }
 function fmtPct(n){ return (n||0).toFixed(1)+"%"; }
 function esc(s){ return String(s).replace(/[&<>"]/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); }
@@ -498,13 +538,34 @@ function derive(){
   };
   feeImpact.gap = feeImpact.valueNoFees - feeImpact.valueWithFees;
 
+  // Sensitivity: what happens if the long-run growth or yield assumption is off by a couple of
+  // percentage points, in either direction, from what's set in Holdings. Always measured against
+  // the current target dividend and age, on the cash-yield basis (the more conservative of the two).
+  var sensitivityMonths = Math.max(months, (state.targetAge-state.currentAge)*12+1);
+  function runSensitivity(deltas, mode){
+    return deltas.map(function(delta){
+      var adjStocks = state.stocks.map(function(s){
+        var ns={}; for(var k in s) ns[k]=s[k];
+        if(mode==="growth") ns.growth = s.growth+delta;
+        else { ns.yieldCash = Math.max(0, s.yieldCash+delta); ns.yieldGrossed = Math.max(0, s.yieldGrossed+delta); }
+        return ns;
+      });
+      var res = simulateMulti({stocks:adjStocks, monthlyContribution:state.monthlyContribution, months:sensitivityMonths, reallocation:reallocation, sequence:seq, brokerBuyFee:brokerBuyFee, yieldField:"yieldCash"});
+      var crossM = findCrossingMonth(res, state.targetDividend, inflRate);
+      return {delta:delta, years: crossM? crossM/12 : null, age: crossM? state.currentAge+crossM/12 : null, endValue: res[res.length-1].totalValue};
+    });
+  }
+  var growthSensitivity = runSensitivity([-2,-1,0,1,2], "growth");
+  var yieldSensitivity = runSensitivity([-1,-0.5,0,0.5,1], "yield");
+
   return {
     months:months, seq:seq, reallocation:reallocation, simCash:simCash, simGrossed:simGrossed, inflRate:inflRate,
     crossCashMonth:crossCashMonth, crossGrossedMonth:crossGrossedMonth, chartData:chartData, targetMonth:targetMonth,
     yieldField:yieldField, reqContribCash:reqContribCash, reqContribGrossed:reqContribGrossed,
     totalBalance:totalBalance, currentRunRateCash:currentRunRateCash, currentRunRateGrossed:currentRunRateGrossed,
     blendedYieldCash:blendedYieldCash, gaugePct:gaugePct, highestYieldStock:highestYieldStock,
-    brokerBuyFee:brokerBuyFee, sellFee:state.broker.sellFee||0, feeImpact:feeImpact
+    brokerBuyFee:brokerBuyFee, sellFee:state.broker.sellFee||0, feeImpact:feeImpact,
+    growthSensitivity:growthSensitivity, yieldSensitivity:yieldSensitivity
   };
 }
 
@@ -537,7 +598,7 @@ function addStock(){
   var id=Math.max.apply(null,state.stocks.map(function(s){return s.id;}).concat([0]))+1;
   var color=PALETTE[state.stocks.length%PALETTE.length];
   var d=hit||GENERIC_DEFAULT;
-  state.stocks.push({id:id, ticker:key, name:d.name, balance:state.newBalance||0, yieldCash:d.yieldCash, yieldGrossed:d.yieldGrossed, growth:d.growth, mer:d.mer||0, color:color, isEstimate:true, unrecognized:!hit});
+  state.stocks.push({id:id, ticker:key, name:d.name, balance:state.newBalance||0, yieldCash:d.yieldCash, yieldGrossed:d.yieldGrossed, growth:d.growth, mer:d.mer||0, color:color, isEstimate:true, unrecognized:!hit, isETF:hit?d.isETF:null});
   state.newTicker=""; state.newBalance=0;
   render();
 }
@@ -654,7 +715,7 @@ function field(label, name, value, suffix, onchange, step){
     '</div></label>';
 }
 
-var TABS=[["summary","Summary"],["holdings","Holdings & Contributions"],["growth","Growth & Compounding"],["tax","Tax & CGT"],["insights","Insights"],["compare","Compare Scenarios"]];
+var TABS=[["summary","Summary"],["holdings","Holdings & Contributions"],["growth","Growth & Compounding"],["tax","Tax & CGT"],["insights","Insights"],["compare","Compare Scenarios"],["export","Export Report"]];
 
 function renderNav(){
   return '<nav class="tabs">'+TABS.map(function(t){
@@ -729,11 +790,11 @@ function readout(label,val,sub,accent){
 function renderHoldings(d){
   var h='';
   h+='<div class="card"><h2>Holdings '+helpBtn("h-hold")+'</h2>'+
-    helpBox("h-hold","Add each stock or ETF you hold, or are considering. Known tickers auto-fill estimated yield, growth and management fee (MER) figures, unknown ones get a generic placeholder you should edit. Everything else on the page, including the projections and the fee impact below, is built from this table.")+
-    '<div class="warnbox">Auto-filled figures are rough planning estimates, not live data. Verify against the fund\'s current fact sheet (PDS).</div>'+
+    helpBox("h-hold","Add each stock or ETF you hold, or are considering. Known tickers auto-fill estimated yield, growth and management fee (MER) figures, unknown ones get a generic placeholder you should edit. Everything else on the page, including the projections and the fee impact below, is built from this table. The Verify column links straight to that holding's official ASX quote page so you can check the real current numbers yourself and update the fields above with them.")+
+    '<div class="warnbox">Auto-filled figures are rough planning estimates, not live data. This tool never fetches anything from the internet itself, that would mean sending your holdings out over the network, which breaks the fully local, nothing-sent-anywhere design of this page. Click Verify and check the real numbers on ASX, then type them in.</div>'+
     '<div class="scrollhint">&larr; swipe to see all columns &rarr;</div>'+
     '<div class="table-scroll wide">'+
-    '<table><thead><tr><th>Ticker</th><th>Balance</th><th>Cash yield</th><th>Grossed yield</th><th>Growth</th><th>MER '+helpBtn("h-mer")+'</th><th></th></tr></thead><tbody>';
+    '<table><thead><tr><th>Ticker</th><th>Balance</th><th>Cash yield</th><th>Grossed yield</th><th>Growth</th><th>MER '+helpBtn("h-mer")+'</th><th>Verify '+helpBtn("h-verify")+'</th><th></th></tr></thead><tbody>';
   state.stocks.forEach(function(s){
     h+='<tr><td><span class="dot" style="background:'+s.color+';"></span> <b>'+esc(s.ticker)+'</b><div style="font-size:10px;color:#5B6A78;max-width:160px;">'+esc(s.name)+'</div></td>'+
       '<td><input type="text" inputmode="decimal" data-field="stock-'+s.id+'-balance" step="100" value="'+s.balance+'" style="width:90px;" oninput="updateStock('+s.id+',\'balance\',this.value)"/></td>'+
@@ -741,6 +802,7 @@ function renderHoldings(d){
       '<td><input type="text" inputmode="decimal" data-field="stock-'+s.id+'-yieldGrossed" step="0.1" value="'+s.yieldGrossed+'" style="width:60px;" oninput="updateStock('+s.id+',\'yieldGrossed\',this.value)"/>%</td>'+
       '<td><input type="text" inputmode="decimal" data-field="stock-'+s.id+'-growth" step="0.1" value="'+s.growth+'" style="width:60px;" oninput="updateStock('+s.id+',\'growth\',this.value)"/>%</td>'+
       '<td><input type="text" inputmode="decimal" data-field="stock-'+s.id+'-mer" step="0.01" value="'+(s.mer||0)+'" style="width:55px;" oninput="updateStock('+s.id+',\'mer\',this.value)"/>%</td>'+
+      '<td>'+asxLinkHtml(s.ticker, s.isETF)+'</td>'+
       '<td><button class="btn small danger" '+(state.stocks.length<=1?"disabled":"")+' onclick="removeStock('+s.id+')">Remove</button></td></tr>';
   });
   h+='</tbody></table></div>'+
@@ -750,6 +812,7 @@ function renderHoldings(d){
       '<button class="btn primary" onclick="addStock()">+ Add</button>'+
     '</div>'+
     helpBox("h-mer","The fund's management fee (MER), charged annually as a percentage of what's invested and taken out of the fund's return automatically, you never see a separate bill for it. This calculator treats it as a direct drag on growth: the compounding math uses growth minus MER as the real annual return. It doesn't reduce the dividend yield directly, since distributions are already paid net of the MER by the fund.")+
+    helpBox("h-verify","ASX splits its quote pages into two templates: one for ETFs and managed funds, one for individual companies. For holdings already in this tool's database the right one is linked directly. For a ticker typed in manually that isn't recognised, both links are shown since there's no way to know the type in advance, one of the two will be the real page. The ASX page shows price, announcements and distribution history, it does not show grossed-up (franked) yield or MER directly. For those two figures the fund provider's own site (Vanguard, Betashares, iShares, VanEck etc.) or its Product Disclosure Statement is the real source, the ASX page is the fastest way to confirm you've got the right ticker and see the raw distribution amounts first.")+
   '</div>';
 
   h+='<div class="card"><h2>Broker &amp; fees '+helpBtn("h-broker")+'</h2>'+
@@ -815,6 +878,25 @@ function renderGrowth(d){
   h+='<div class="card"><h2>Quick compounding calculator '+helpBtn("h-comp")+'</h2>'+
     helpBox("h-comp","A standalone what-if tool, separate from your saved holdings. Change any number to explore how starting amount, monthly contribution, growth rate, or time horizon each move the outcome. Prefilled with your current blended numbers.")+
     renderCompoundCalc(d)+
+  '</div>';
+
+  h+='<div class="card"><h2>What if growth or yield turns out different? '+helpBtn("h-sens")+'</h2>'+
+    helpBox("h-sens","Unlike a mortgage rate, where a wobble of a percent or two mostly changes your monthly repayment for a while, a persistent 1-2 percentage point difference in your assumed long-run growth or yield compounds every single year for decades. Over a 15-40 year horizon that small-looking difference in the annual rate produces a much bigger swing in the outcome than the same percentage move would on a mortgage. That's exactly why it's worth looking at, not despite the long timeframe, because of it. These runs shift every holding's growth (or yield) by the same amount and re-solve for when you'd hit your target, on the cash-yield basis, holding everything else the same.")+
+    '<div class="grid2">'+
+      '<div><div style="font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:#7E93A3;margin-bottom:6px;">If long-run growth is off</div>'+
+      '<table><thead><tr><th>Growth adj.</th><th>Years to target</th><th>Hits at age</th></tr></thead><tbody>'+
+      d.growthSensitivity.map(function(r){
+        return '<tr'+(r.delta===0?' style="background:rgba(79,195,217,.08);"':'')+'><td>'+(r.delta>0?"+":"")+r.delta+'%</td><td>'+(r.years?r.years.toFixed(1)+" yrs":"40+ yrs")+'</td><td>'+(r.age?r.age.toFixed(1):"—")+'</td></tr>';
+      }).join("")+
+      '</tbody></table></div>'+
+      '<div><div style="font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:#7E93A3;margin-bottom:6px;">If long-run yield is off</div>'+
+      '<table><thead><tr><th>Yield adj.</th><th>Years to target</th><th>Hits at age</th></tr></thead><tbody>'+
+      d.yieldSensitivity.map(function(r){
+        return '<tr'+(r.delta===0?' style="background:rgba(79,195,217,.08);"':'')+'><td>'+(r.delta>0?"+":"")+r.delta+'%</td><td>'+(r.years?r.years.toFixed(1)+" yrs":"40+ yrs")+'</td><td>'+(r.age?r.age.toFixed(1):"—")+'</td></tr>';
+      }).join("")+
+      '</tbody></table></div>'+
+    '</div>'+
+    '<div style="font-size:11px;color:#5B6A78;margin-top:10px;">The highlighted row is your current assumption, unchanged. This is included in the exported report on the Export tab.</div>'+
   '</div>';
 
   return h;
@@ -916,7 +998,7 @@ function renderCgtResult(d){
   var frac=(state.tax.sellPercent||0)/100;
   var cmp=cgtCompare(snapshot, state.tax.sellStockId, frac, state.tax.salary, state.inflation, sellMonth+1, d.sellFee);
   var s=state.stocks.find(function(x){return x.id===state.tax.sellStockId;});
-  return '<div style="font-size:11.5px;color:#5B6A78;margin-bottom:8px;">At age '+state.tax.sellAge+', selling '+state.tax.sellPercent+'% of '+esc(s?s.ticker:"?")+' (projected on the '+(yieldField==="yieldCash"?"cash":"grossed-up")+' yield basis, after a '+fmtFull(d.sellFee)+' broker sell fee deducted from proceeds):</div>'+
+  return '<div style="font-size:11.5px;color:#5B6A78;margin-bottom:8px;">At age '+state.tax.sellAge+', selling '+state.tax.sellPercent+'% of '+esc(s?s.ticker:"?")+' (projected on the '+(yieldField==="yieldCash"?"cash":"grossed-up")+' yield basis, after a '+fmtPrecise(d.sellFee)+' broker sell fee deducted from proceeds):</div>'+
   '<div class="taxcompare">'+
     '<div class="taxcol old"><h3>If 2025 rules had continued</h3>'+
       '<div class="line"><span>Total capital gain</span><b>'+fmtFull(cmp.totalGainOld)+'</b></div>'+
@@ -999,12 +1081,13 @@ function renderInsights(d){
     helpBox("h-ideas","General information about how these funds have historically behaved, not a personal recommendation. Higher yield almost always trades off against diversification, growth, or concentration risk, add one via Holdings to model its real effect.")+
     '<div class="cardsub">Your current blended cash yield is <b style="color:#EAF1F6;font-family:monospace;">'+fmtPct(d.blendedYieldCash*100)+'</b>.</div>'+
     '<div class="scrollhint">&larr; swipe to see all columns &rarr;</div>'+
-    '<div class="table-scroll">'+
-    '<table><thead><tr><th>Ticker</th><th>What it is</th><th>Cash yield</th><th>Grossed yield</th><th>Growth</th><th>MER</th></tr></thead><tbody>'+
+    '<div class="table-scroll wide">'+
+    '<table><thead><tr><th>Ticker</th><th>What it is</th><th>Cash yield</th><th>Grossed yield</th><th>Growth</th><th>MER</th><th>Verify</th></tr></thead><tbody>'+
     portfolioIdeas.map(function(idea){
       return '<tr><td><b>'+esc(idea.ticker)+'</b></td><td style="color:#8593A3;max-width:220px;">'+esc(idea.note)+'</td>'+
         '<td style="color:#4FC3D9;">'+idea.yieldCash.toFixed(1)+'%</td><td style="color:#D9A441;">'+idea.yieldGrossed.toFixed(1)+'%</td><td style="color:#6FBE8F;">'+idea.growth.toFixed(1)+'%</td>'+
-        '<td style="color:#8593A3;">'+(idea.mer||0).toFixed(2)+'%</td></tr>';
+        '<td style="color:#8593A3;">'+(idea.mer||0).toFixed(2)+'%</td>'+
+        '<td>'+asxLinkHtml(idea.ticker, idea.isETF)+'</td></tr>';
     }).join("")+'</tbody></table></div>'+
   '</div>';
 
@@ -1046,6 +1129,415 @@ function renderCompare(d){
   return h;
 }
 
+/* ============================== EXPORT / REPORT ============================== */
+
+function assembleReportData(d){
+  var creditNow = state.stocks.reduce(function(s,st){return s+st.balance*((st.yieldGrossed-st.yieldCash)/100);},0);
+  var divTax = dividendTaxImpact(state.tax.salary, d.currentRunRateCash, creditNow, 2026);
+
+  var cgt=null;
+  var sellMonth=(state.tax.sellAge-state.currentAge)*12;
+  if(sellMonth>0){
+    var yieldFieldForCgt = d.yieldField;
+    var snapArr = (yieldFieldForCgt==="yieldCash")?d.simCash:d.simGrossed;
+    var idx=Math.min(sellMonth, snapArr.length)-1;
+    var snapshot=snapArr[idx];
+    var frac=(state.tax.sellPercent||0)/100;
+    var sellStock=state.stocks.find(function(x){return x.id===state.tax.sellStockId;});
+    if(sellStock){
+      var cmp=cgtCompare(snapshot, state.tax.sellStockId, frac, state.tax.salary, state.inflation, sellMonth+1, d.sellFee);
+      cgt={stock:sellStock.ticker, percent:state.tax.sellPercent, age:state.tax.sellAge, cmp:cmp};
+    }
+  }
+
+  var contribModeLabel = (state.contribMode==="custom" && state.customSequence.length>0)
+    ? "Custom pattern: "+state.customSequence.map(function(id){var s=state.stocks.find(function(x){return x.id===id;});return s?s.ticker:"?";}).join(" \u2192 ")
+    : "Rotates evenly: "+state.stocks.map(function(s){return s.ticker;}).join(" \u2192 ");
+
+  var reallocation = (state.reallocAge!=null && state.reallocTargets.length>0)
+    ? {age:state.reallocAge, targets:state.reallocTargets.map(function(id){var s=state.stocks.find(function(x){return x.id===id;});return s?s.ticker:"?";})}
+    : null;
+
+  var scenarios = state.scenarios.map(function(s){
+    var realloc = s.reallocateAge? {thresholdMonth:(s.reallocateAge-state.currentAge)*12, targetIds:[s.targetId]} : null;
+    var res=simulateMulti({stocks:state.stocks, monthlyContribution:state.monthlyContribution+s.contributionDelta, months:d.months, reallocation:realloc, yieldField:d.yieldField, sequence:d.seq, brokerBuyFee:d.brokerBuyFee});
+    var crossM=findCrossingMonth(res, state.targetDividend, d.inflRate);
+    var targetStock=state.stocks.find(function(x){return x.id===s.targetId;});
+    return {label:s.label, monthlyTotal:state.monthlyContribution+s.contributionDelta, targetTicker:targetStock?targetStock.ticker:"?",
+      reallocateAge:s.reallocateAge, years:crossM?crossM/12:null, age:crossM?state.currentAge+crossM/12:null};
+  });
+
+  return {
+    generatedAt:new Date(),
+    plan:{currentAge:state.currentAge, targetAge:state.targetAge, targetDividend:state.targetDividend, monthlyContribution:state.monthlyContribution,
+      inflation:state.inflation, adjustInflation:state.adjustInflation, yieldView:state.yieldView},
+    contribModeLabel:contribModeLabel,
+    reallocation:reallocation,
+    broker:{name:(BROKER_DB[state.broker.id]?BROKER_DB[state.broker.id].name:state.broker.id), buyFee:state.broker.buyFee, sellFee:state.broker.sellFee},
+    holdings:state.stocks.map(function(s){return {ticker:s.ticker, name:s.name, balance:s.balance, yieldCash:s.yieldCash, yieldGrossed:s.yieldGrossed, growth:s.growth, mer:s.mer||0};}),
+    results:{crossCashMonth:d.crossCashMonth, crossGrossedMonth:d.crossGrossedMonth, currentRunRateCash:d.currentRunRateCash,
+      blendedYieldCash:d.blendedYieldCash, portfolioNeeded:d.blendedYieldCash>0?state.targetDividend/d.blendedYieldCash:null, feeImpact:d.feeImpact},
+    growthSensitivity:d.growthSensitivity, yieldSensitivity:d.yieldSensitivity,
+    tax:{salary:state.tax.salary, cashDiv:d.currentRunRateCash, frankingCredit:creditNow, grossedUp:divTax.grossedUp, net:divTax.net},
+    cgt:cgt, scenarios:scenarios
+  };
+}
+
+var REPORT_CSS = "*{box-sizing:border-box;}"+
+  "body{font-family:'Helvetica Neue',Arial,Helvetica,sans-serif;color:#232830;background:#fff;max-width:860px;margin:0 auto;padding:0 0 40px;line-height:1.5;}"+
+  ".rletterhead{background:#12233F;color:#fff;padding:26px 34px 22px;margin-bottom:26px;}"+
+  ".rletterhead .rkicker{font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:#8FB4DE;margin-bottom:6px;}"+
+  ".rletterhead h1{font-size:23px;margin:0 0 4px;color:#fff;font-weight:600;}"+
+  ".rletterhead .rmeta{color:#B7C8DE;margin-bottom:0;}"+
+  ".rbody{padding:0 34px;}"+
+  "h2{font-size:13px;margin:26px 0 10px;padding-bottom:6px;border-bottom:2px solid #12233F;color:#12233F;text-transform:uppercase;letter-spacing:.05em;font-weight:700;}"+
+  ".rmeta{font-size:11.5px;color:#666;margin-bottom:4px;}"+
+  ".rbanner{background:#F4F8FC;border:1px solid #CFE0F0;color:#1B3A5C;font-size:11.5px;padding:10px 14px;border-radius:6px;margin:0 0 20px;}"+
+  ".rsummary{background:#12233F;border-radius:8px;padding:18px 22px;margin:0 0 24px;color:#fff;display:flex;flex-wrap:wrap;gap:22px;align-items:center;}"+
+  ".rsummary .rsbig{font-size:30px;font-weight:700;line-height:1.1;}"+
+  ".rsummary .rslabel{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:#9FB8D6;margin-bottom:3px;}"+
+  ".rsummary .rscol{min-width:150px;}"+
+  "table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:6px;}"+
+  "th,td{text-align:left;padding:7px 10px;border-bottom:1px solid #e6e9ee;}"+
+  "th{background:#12233F;color:#DCE6F2;font-size:9.5px;text-transform:uppercase;letter-spacing:.04em;font-weight:600;padding:7px 10px 12px;}"+
+  "tbody tr:first-child td{padding-top:16px;}"+
+  "td:not(:first-child),th:not(:first-child){text-align:right;}"+
+  "tbody tr:nth-child(even){background:#F7F9FC;}"+
+  ".rkvgrid{display:grid;grid-template-columns:1fr 1fr;gap:2px 24px;margin-bottom:12px;}"+
+  ".rkv{font-size:12.5px;padding:6px 0;border-bottom:1px solid #eef1f5;display:flex;justify-content:space-between;}"+
+  ".rkv span{color:#666;}"+
+  ".rkv b{color:#12233F;}"+
+  ".rnote{font-size:11px;color:#5b6472;background:#F7F9FC;border-left:3px solid #12233F;padding:8px 12px;margin-bottom:12px;line-height:1.6;}"+
+  ".rhighlight td{background:#EAF1FA !important;font-weight:600;}"+
+  ".rfoot{font-size:9.5px;color:#8a8f98;margin-top:30px;padding:14px 34px 0;border-top:1px solid #e2e5ea;line-height:1.7;}"+
+  "@media print{ .rletterhead{background:#12233F !important;-webkit-print-color-adjust:exact;print-color-adjust:exact;} th{background:#12233F !important;-webkit-print-color-adjust:exact;print-color-adjust:exact;} .rsummary{-webkit-print-color-adjust:exact;print-color-adjust:exact;} .rsection{page-break-inside:avoid;} }";
+
+function reportKvGrid(pairs){
+  return '<div class="rkvgrid">'+pairs.map(function(p){
+    return '<div class="rkv"><span>'+esc(p[0])+'</span><b>'+esc(p[1])+'</b></div>';
+  }).join("")+'</div>';
+}
+function reportTable(headers, rows, highlightIndex){
+
+  return '<table><thead><tr>'+headers.map(function(h){return '<th>'+esc(h)+'</th>';}).join("")+'</tr></thead><tbody>'+
+    rows.map(function(r,i){ return '<tr'+(i===highlightIndex?' class="rhighlight"':'')+'>'+r.map(function(c){return '<td>'+esc(c)+'</td>';}).join("")+'</tr>'; }).join("")+
+    '</tbody></table>';
+}
+
+function buildReportBodyHTML(rd){
+  var h='';
+  h+='<div class="rletterhead"><div class="rkicker">Personal Financial Plan &mdash; Prepared for Discussion</div>'+
+    '<h1>Dividend &amp; FIRE Income Plan</h1>'+
+    '<div class="rmeta">Generated '+rd.generatedAt.toLocaleDateString("en-AU",{day:"numeric",month:"long",year:"numeric"})+' at '+rd.generatedAt.toLocaleTimeString("en-AU",{hour:"2-digit",minute:"2-digit"})+'</div></div>';
+
+  h+='<div class="rbody">';
+
+  h+='<div class="rbanner">Prepared for discussion with a financial adviser or accountant. This is a planning and education tool, not financial, tax or legal advice, figures are assumptions and simplifications, not guarantees.</div>';
+
+  h+='<div class="rsummary"><div class="rscol"><div class="rslabel">Years to target (cash yield)</div><div class="rsbig">'+(rd.results.crossCashMonth?(rd.results.crossCashMonth/12).toFixed(1)+" yrs":"40+ yrs")+'</div></div>'+
+    '<div class="rscol"><div class="rslabel">Target hit at age</div><div class="rsbig">'+(rd.results.crossCashMonth?(rd.plan.currentAge+rd.results.crossCashMonth/12).toFixed(1):"—")+'</div></div>'+
+    '<div class="rscol"><div class="rslabel">Today\'s dividend income</div><div class="rsbig">'+fmtFull(rd.results.currentRunRateCash)+'</div></div>'+
+    '<div class="rscol"><div class="rslabel">Target dividend income</div><div class="rsbig">'+fmtFull(rd.plan.targetDividend)+'</div></div></div>';
+
+  h+='<div class="rsection"><h2>Plan snapshot</h2>'+
+    reportKvGrid([
+      ["Current age", rd.plan.currentAge], ["Target retirement age", rd.plan.targetAge],
+      ["Monthly contribution", fmtFull(rd.plan.monthlyContribution)], ["Target dividend income", fmtFull(rd.plan.targetDividend)+"/yr"],
+      ["Contribution pattern", rd.contribModeLabel], ["Broker", rd.broker.name+" ("+fmtPrecise(rd.broker.buyFee)+" buy / "+fmtPrecise(rd.broker.sellFee)+" sell)"],
+      ["Inflation assumption", rd.plan.inflation+"%"+(rd.plan.adjustInflation?" (target adjusted for inflation)":" (not applied to target)")], ["Yield basis shown", rd.plan.yieldView]
+    ])+
+    (rd.reallocation? '<div class="rkv"><span>Reallocation plan</span><b>From age '+rd.reallocation.age+', new contributions redirect to '+rd.reallocation.targets.join(", ")+'</b></div>':'')+
+  '</div>';
+
+  h+='<div class="rsection"><h2>Key results</h2>'+
+    reportKvGrid([
+      ["Years to target (cash yield)", rd.results.crossCashMonth?(rd.results.crossCashMonth/12).toFixed(1)+" yrs (age "+(rd.plan.currentAge+rd.results.crossCashMonth/12).toFixed(1)+")":"40+ yrs"],
+      ["Years to target (grossed-up)", rd.results.crossGrossedMonth?(rd.results.crossGrossedMonth/12).toFixed(1)+" yrs (age "+(rd.plan.currentAge+rd.results.crossGrossedMonth/12).toFixed(1)+")":"40+ yrs"],
+      ["Today's dividend income", fmtFull(rd.results.currentRunRateCash)], ["Portfolio size needed for target", rd.results.portfolioNeeded?fmtFull(rd.results.portfolioNeeded):"—"]
+    ])+
+  '</div>';
+
+  h+='<div class="rsection"><h2>Holdings</h2>'+
+    reportTable(["Ticker","Balance","Cash yield","Grossed yield","Growth","MER"], rd.holdings.map(function(hh){
+      return [hh.ticker, fmtFull(hh.balance), hh.yieldCash.toFixed(1)+"%", hh.yieldGrossed.toFixed(1)+"%", hh.growth.toFixed(1)+"%", hh.mer.toFixed(2)+"%"];
+    }))+
+  '</div>';
+
+  h+='<div class="rsection"><h2>If the long-run growth assumption is off</h2>'+
+    reportTable(["Growth adjustment","Years to target","Hits at age"], rd.growthSensitivity.map(function(r){
+      return [(r.delta>0?"+":"")+r.delta+"%", r.years?r.years.toFixed(1)+" yrs":"40+ yrs", r.age?r.age.toFixed(1):"—"];
+    }), rd.growthSensitivity.findIndex(function(r){return r.delta===0;}))+
+  '</div>';
+
+  h+='<div class="rsection"><h2>If the long-run yield assumption is off</h2>'+
+    reportTable(["Yield adjustment","Years to target","Hits at age"], rd.yieldSensitivity.map(function(r){
+      return [(r.delta>0?"+":"")+r.delta+"%", r.years?r.years.toFixed(1)+" yrs":"40+ yrs", r.age?r.age.toFixed(1):"—"];
+    }), rd.yieldSensitivity.findIndex(function(r){return r.delta===0;}))+
+  '</div>';
+
+  h+='<div class="rsection"><h2>Fees</h2>'+
+    '<div class="rnote">Based on '+esc(rd.broker.name)+' brokerage of <b>'+fmtPrecise(rd.broker.buyFee)+' per purchase</b> (and '+fmtPrecise(rd.broker.sellFee)+' per sale), charged once for whichever holding is bought each month, plus each fund\u2019s own management fee (MER, shown per holding above), which is applied as a direct drag on that holding\u2019s growth rate.</div>'+
+    reportKvGrid([
+      ["Brokerage fee per purchase", fmtPrecise(rd.broker.buyFee)+" ("+rd.broker.name+")"],
+      ["Brokerage paid by target age", fmtFull(rd.results.feeImpact.brokerageSoFar)],
+      ["Portfolio value lost to fees vs a zero-fee plan", fmtFull(rd.results.feeImpact.gap)]
+    ])+
+  '</div>';
+
+  h+='<div class="rsection"><h2>Dividend tax (at salary '+fmtFull(rd.tax.salary)+')</h2>'+
+    reportKvGrid([
+      ["Cash dividends", fmtFull(rd.tax.cashDiv)], ["Franking credits", fmtFull(rd.tax.frankingCredit)],
+      ["Assessable (grossed-up) amount", fmtFull(rd.tax.grossedUp)], [rd.tax.net<=0?"Net refund":"Net extra tax", fmtFull(Math.abs(rd.tax.net))]
+    ])+
+  '</div>';
+
+  if(rd.cgt){
+    h+='<div class="rsection"><h2>CGT scenario: selling '+rd.cgt.percent+'% of '+esc(rd.cgt.stock)+' at age '+rd.cgt.age+'</h2>'+
+      reportTable(["Rules","Taxable gain","CGT payable"], [
+        ["If 2025 rules had continued", fmtFull(rd.cgt.cmp.taxableOld), fmtFull(rd.cgt.cmp.taxOld)],
+        ["Actual 2026 law (indexation + 30% floor from 1 Jul 2027)", fmtFull(rd.cgt.cmp.taxablePreDiscounted+rd.cgt.cmp.realGainPost), fmtFull(rd.cgt.cmp.taxNew)]
+      ])+
+    '</div>';
+  }
+
+  if(rd.scenarios.length){
+    h+='<div class="rsection"><h2>Scenario comparison</h2>'+
+      reportTable(["Scenario","Monthly total","Reallocates to","Years to target","Hits at age"], rd.scenarios.map(function(s){
+        return [s.label, fmtFull(s.monthlyTotal), s.reallocateAge?(s.targetTicker+" from age "+s.reallocateAge):"—", s.years?s.years.toFixed(1):"40+", s.age?s.age.toFixed(1):"—"];
+      }))+
+    '</div>';
+  }
+
+  h+='</div>'; // close .rbody
+  h+='<div class="rfoot">All figures are projections based on the assumptions above, not guarantees. Brokerage and fund management fees (MER) are rough, editable estimates. Tax and CGT figures use a simplified average-cost-base model against the rules legislated in the 2026 Federal Budget (Royal Assent 26 Jun 2026), for education, not advice. Generated entirely in a web browser; nothing entered into this tool is stored or transmitted anywhere. Always confirm with a licensed accountant, financial adviser, or the ATO before acting.</div>';
+  return h;
+}
+function buildReportDocumentHTML(rd){
+  return '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Dividend &amp; FIRE Plan Report</title><style>'+REPORT_CSS+'</style></head><body>'+buildReportBodyHTML(rd)+'</body></html>';
+}
+
+/* Canvas-based PNG/JPEG renderer. Runs the same layout twice: once to measure the total height
+   needed, then again on a correctly-sized canvas to actually draw, so nothing gets cut off. */
+function drawReportCanvas(rd){
+  var W=1100, marginX=60, contentW=W-marginX*2;
+  function run(ctx, draw, canvasRef){
+    var y=50;
+    function setFont(size,weight){ ctx.font=(weight||"400")+" "+size+"px Arial,Helvetica,sans-serif"; }
+    function text(str,x,size,weight,color){
+      setFont(size,weight);
+      if(draw){ ctx.fillStyle=color||"#181818"; ctx.fillText(str,x,y); }
+      y+=Math.round(size*1.45);
+    }
+    function wrapText(str,x,size,color){
+      setFont(size,"400");
+      var words=String(str).split(" "), line="";
+      words.forEach(function(w){
+        var test=line?line+" "+w:w;
+        if(ctx.measureText(test).width>contentW-(x-marginX) && line){
+          if(draw){ ctx.fillStyle=color||"#666"; ctx.fillText(line,x,y); }
+          y+=Math.round(size*1.5); line=w;
+        } else line=test;
+      });
+      if(line){ if(draw){ ctx.fillStyle=color||"#666"; ctx.fillText(line,x,y); } y+=Math.round(size*1.5); }
+    }
+    function hr(color){ y+=6; if(draw){ ctx.strokeStyle=color||"#ddd"; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(marginX,y); ctx.lineTo(W-marginX,y); ctx.stroke(); } y+=16; }
+    function sectionTitle(str){ y+=10; text(str,marginX,16,"700","#12233F"); hr("#12233F"); }
+    function kvRow(pairs){
+      var colW=contentW/pairs.length;
+      pairs.forEach(function(p,i){
+        var x=marginX+i*colW;
+        setFont(11,"400"); if(draw){ ctx.fillStyle="#666"; ctx.fillText(String(p[0]),x,y); }
+        setFont(13,"700"); if(draw){ ctx.fillStyle="#111"; ctx.fillText(String(p[1]),x,y+17); }
+      });
+      y+=40;
+    }
+    function roundRectPath(x,y,w,hgt,r){
+      ctx.beginPath();
+      ctx.moveTo(x+r,y);
+      ctx.arcTo(x+w,y,x+w,y+hgt,r);
+      ctx.arcTo(x+w,y+hgt,x,y+hgt,r);
+      ctx.arcTo(x,y+hgt,x,y,r);
+      ctx.arcTo(x,y,x+w,y,r);
+      ctx.closePath();
+    }
+    function table(headers, rows, widths, highlightIndex){
+      var x=marginX;
+      if(draw){ ctx.fillStyle="#12233F"; ctx.fillRect(marginX-8,y-16,contentW+16,24); }
+      setFont(9.5,"700");
+      headers.forEach(function(hh,i){
+        var colRight=x+widths[i]-8;
+        if(draw){ ctx.fillStyle="#DCE6F2"; ctx.textAlign=(i===0?"left":"right"); ctx.fillText(String(hh).toUpperCase(), i===0?x:colRight, y); }
+        x+=widths[i];
+      });
+      ctx.textAlign="left";
+      y+=36;
+      rows.forEach(function(row,ri){
+        if(draw && ri%2===1){ ctx.fillStyle="#F7F9FC"; ctx.fillRect(marginX-8,y-15,contentW+16,22); }
+        if(draw && ri===highlightIndex){ ctx.fillStyle="#EAF1FA"; ctx.fillRect(marginX-8,y-15,contentW+16,22); }
+        x=marginX; setFont(12,"400");
+        row.forEach(function(cell,i){
+          var colRight=x+widths[i]-8;
+          if(draw){ ctx.fillStyle="#222"; ctx.textAlign=(i===0?"left":"right"); ctx.fillText(String(cell), i===0?x:colRight, y); }
+          x+=widths[i];
+        });
+        ctx.textAlign="left";
+        y+=24;
+      });
+      y+=10;
+    }
+
+    ctx.textAlign="left";
+    if(draw){ ctx.fillStyle="#ffffff"; ctx.fillRect(0,0,canvasRef.width,canvasRef.height); }
+
+    var headerH=124;
+    if(draw){ ctx.fillStyle="#12233F"; ctx.fillRect(0,0,canvasRef.width,headerH); }
+    setFont(10,"700"); if(draw){ ctx.fillStyle="#8FB4DE"; ctx.fillText("PERSONAL FINANCIAL PLAN \u2014 PREPARED FOR DISCUSSION", marginX, 34); }
+    setFont(24,"700"); if(draw){ ctx.fillStyle="#ffffff"; ctx.fillText("Dividend & FIRE Income Plan", marginX, 70); }
+    setFont(12,"400"); if(draw){ ctx.fillStyle="#B7C8DE"; ctx.fillText("Generated "+rd.generatedAt.toLocaleDateString("en-AU",{day:"numeric",month:"long",year:"numeric"})+" \u2014 for discussion with a financial adviser or accountant, not financial advice itself.", marginX, 96); }
+    y=headerH+40;
+
+    var boxTop=y-26, boxH=92;
+    if(draw){ ctx.fillStyle="#12233F"; roundRectPath(marginX-10, boxTop, contentW+20, boxH, 10); ctx.fill(); }
+    var stats=[
+      ["YEARS TO TARGET (CASH YIELD)", rd.results.crossCashMonth?(rd.results.crossCashMonth/12).toFixed(1)+" yrs":"40+ yrs"],
+      ["TARGET HIT AT AGE", rd.results.crossCashMonth?(rd.plan.currentAge+rd.results.crossCashMonth/12).toFixed(1):"\u2014"],
+      ["TODAY'S DIVIDEND INCOME", fmtFull(rd.results.currentRunRateCash)],
+      ["TARGET DIVIDEND INCOME", fmtFull(rd.plan.targetDividend)]
+    ];
+    var statColW=contentW/stats.length;
+    stats.forEach(function(s,i){
+      var sx=marginX+i*statColW;
+      setFont(9.5,"700"); if(draw){ ctx.fillStyle="#9FB8D6"; ctx.fillText(s[0], sx, boxTop+26); }
+      setFont(21,"700"); if(draw){ ctx.fillStyle="#ffffff"; ctx.fillText(s[1], sx, boxTop+58); }
+    });
+    y=boxTop+boxH+34;
+
+    sectionTitle("Plan snapshot");
+    kvRow([["Current age",rd.plan.currentAge],["Target retirement age",rd.plan.targetAge]]);
+    kvRow([["Monthly contribution",fmtFull(rd.plan.monthlyContribution)],["Target dividend income",fmtFull(rd.plan.targetDividend)+"/yr"]]);
+    kvRow([["Contribution pattern",rd.contribModeLabel],["Broker",rd.broker.name+" ("+fmtPrecise(rd.broker.buyFee)+"/trade)"]]);
+    if(rd.reallocation) kvRow([["Reallocation plan","From age "+rd.reallocation.age+" \u2192 "+rd.reallocation.targets.join(", ")]]);
+
+    sectionTitle("Key results");
+    kvRow([["Years to target (cash yield)", rd.results.crossCashMonth?(rd.results.crossCashMonth/12).toFixed(1)+" yrs":"40+ yrs"],
+           ["Years to target (grossed-up)", rd.results.crossGrossedMonth?(rd.results.crossGrossedMonth/12).toFixed(1)+" yrs":"40+ yrs"]]);
+    kvRow([["Today's dividend income", fmtFull(rd.results.currentRunRateCash)],["Portfolio size needed", rd.results.portfolioNeeded?fmtFull(rd.results.portfolioNeeded):"—"]]);
+
+    sectionTitle("Holdings");
+    table(["Ticker","Balance","Cash yld","Grossed yld","Growth","MER"],
+      rd.holdings.map(function(hh){ return [hh.ticker, fmtFull(hh.balance), hh.yieldCash.toFixed(1)+"%", hh.yieldGrossed.toFixed(1)+"%", hh.growth.toFixed(1)+"%", hh.mer.toFixed(2)+"%"]; }),
+      [90,190,140,150,110,110]);
+
+    sectionTitle("If growth turns out different (cash-yield basis)");
+    table(["Growth adj.","Years to target","Hits at age"],
+      rd.growthSensitivity.map(function(r){ return [(r.delta>0?"+":"")+r.delta+"%", r.years?r.years.toFixed(1):"40+", r.age?r.age.toFixed(1):"—"]; }),
+      [200,260,200], rd.growthSensitivity.findIndex(function(r){return r.delta===0;}));
+
+    sectionTitle("If yield turns out different (cash-yield basis)");
+    table(["Yield adj.","Years to target","Hits at age"],
+      rd.yieldSensitivity.map(function(r){ return [(r.delta>0?"+":"")+r.delta+"%", r.years?r.years.toFixed(1):"40+", r.age?r.age.toFixed(1):"—"]; }),
+      [200,260,200], rd.yieldSensitivity.findIndex(function(r){return r.delta===0;}));
+
+    sectionTitle("Fees");
+    wrapText("Based on "+rd.broker.name+" brokerage of "+fmtPrecise(rd.broker.buyFee)+" per purchase (and "+fmtPrecise(rd.broker.sellFee)+" per sale), charged once for whichever holding is bought each month, plus each fund's own management fee (MER, shown per holding above).", marginX, 11, "#666");
+    y+=6;
+    kvRow([["Brokerage fee per purchase", fmtPrecise(rd.broker.buyFee)+" ("+rd.broker.name+")"],["Brokerage paid by target age", fmtFull(rd.results.feeImpact.brokerageSoFar)]]);
+    kvRow([["Value lost to fees vs zero-fee plan", fmtFull(rd.results.feeImpact.gap)]]);
+
+    sectionTitle("Dividend tax (at salary "+fmtFull(rd.tax.salary)+")");
+    kvRow([["Cash dividends", fmtFull(rd.tax.cashDiv)],["Franking credits", fmtFull(rd.tax.frankingCredit)]]);
+    kvRow([[rd.tax.net<=0?"Net refund":"Net extra tax", fmtFull(Math.abs(rd.tax.net))]]);
+
+    if(rd.cgt){
+      sectionTitle("CGT scenario: selling "+rd.cgt.percent+"% of "+rd.cgt.stock+" at age "+rd.cgt.age);
+      table(["Rules","Taxable gain","CGT payable"], [
+        ["2025 rules continued", fmtFull(rd.cgt.cmp.taxableOld), fmtFull(rd.cgt.cmp.taxOld)],
+        ["Actual 2026 law", fmtFull(rd.cgt.cmp.taxablePreDiscounted+rd.cgt.cmp.realGainPost), fmtFull(rd.cgt.cmp.taxNew)]
+      ], [320,330,330]);
+    }
+
+    if(rd.scenarios.length){
+      sectionTitle("Scenario comparison");
+      table(["Scenario","Monthly total","Years to target","Hits at age"],
+        rd.scenarios.map(function(s){ return [s.label, fmtFull(s.monthlyTotal), s.years?s.years.toFixed(1):"40+", s.age?s.age.toFixed(1):"—"]; }),
+        [340,260,230,150]);
+    }
+
+    y+=8; hr("#ccc");
+    wrapText("This is a planning and education tool, not financial, tax or legal advice. Yield, growth, tax, CGT and fee figures are assumptions and simplifications, not guarantees. Generated entirely in a browser; nothing entered into this tool is stored or sent anywhere.", marginX, 10.5, "#888");
+
+    return y+30;
+  }
+
+  var measure=document.createElement("canvas"); measure.width=W; measure.height=10;
+  var totalHeight=run(measure.getContext("2d"), false, measure);
+  var canvas=document.createElement("canvas");
+  canvas.width=W; canvas.height=Math.ceil(totalHeight);
+  run(canvas.getContext("2d"), true, canvas);
+  return canvas;
+}
+
+function printReport(){
+  var d=derive();
+  var rd=assembleReportData(d);
+  var docHtml=buildReportDocumentHTML(rd);
+  var blob=new Blob([docHtml], {type:"text/html"});
+  var url=URL.createObjectURL(blob);
+  var w=window.open(url, "_blank");
+  if(!w){ URL.revokeObjectURL(url); alert("Your browser blocked the popup needed to build the printable report. Please allow popups for this page and click Print again."); return; }
+  var fired=false;
+  function doPrint(){
+    if(fired) return; fired=true;
+    try{ w.focus(); w.print(); }catch(e){}
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 3000);
+  }
+  // Print once the new tab has actually finished loading the report, this is more reliable across
+  // mobile browsers than a fixed timeout guessing how long rendering takes.
+  try{ w.addEventListener("load", doPrint); }catch(e){}
+  setTimeout(doPrint, 700); // fallback for browsers that don't fire load on a same-window popup navigation
+}
+function downloadReportImage(format){
+  try{
+    var d=derive();
+    var rd=assembleReportData(d);
+    var canvas=drawReportCanvas(rd);
+    var mime = format==="jpeg" ? "image/jpeg" : "image/png";
+    var url = canvas.toDataURL(mime, format==="jpeg"?0.92:undefined);
+    var a=document.createElement("a");
+    a.href=url;
+    a.download = "dividend-fire-report."+(format==="jpeg"?"jpg":"png");
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }catch(e){
+    alert("Couldn't generate the image in this browser. Try the Print / Save as PDF option instead, or a different browser.");
+  }
+}
+window.printReport=printReport;
+window.downloadReportImage=downloadReportImage;
+
+function renderExport(d){
+  var rd=assembleReportData(d);
+  var h='<div class="card"><h2>Export a report for your adviser '+helpBtn("h-export")+'</h2>'+
+    helpBox("h-export","Builds a clean, plain-language summary of everything currently set up in this calculator, your holdings, plan, fees, tax position, sensitivity to growth/yield assumptions, and any scenarios you've added, in a format meant for handing to someone else, not this app's own dark theme. Generated entirely in your browser each time you click a button below; nothing is uploaded anywhere.")+
+    '<div class="grid3" style="margin-bottom:4px;">'+
+      '<button class="btn primary" onclick="printReport()">\ud83d\uddb6\ufe0f Print / Save as PDF</button>'+
+      '<button class="btn primary" onclick="downloadReportImage(\'png\')">\ud83d\uddbc\ufe0f Download PNG</button>'+
+      '<button class="btn primary" onclick="downloadReportImage(\'jpeg\')">\ud83d\uddbc\ufe0f Download JPEG</button>'+
+    '</div>'+
+    '<div style="font-size:11px;color:#5B6A78;">"Print / Save as PDF" opens the report in a new tab and triggers your browser\'s print dialog, choose "Save as PDF" as the destination there instead of a physical printer. If a popup blocker stops the new tab from opening, allow popups for this page and try again.</div>'+
+  '</div>';
+
+  h+='<div class="card"><h2>Preview '+helpBtn("h-exportprev")+'</h2>'+
+    helpBox("h-exportprev","Exactly what will print or download, rendered in its own light-themed frame so it's easy to check before sending it anywhere.")+
+    '<div style="border:1px solid #26333F;border-radius:8px;overflow:hidden;background:#fff;">'+
+      '<iframe id="reportPreview" style="width:100%;height:70vh;min-height:520px;border:none;display:block;"></iframe>'+
+    '</div>'+
+  '</div>';
+
+  return h;
+}
+
 /* ============================== MAIN RENDER ============================== */
 
 function render(){
@@ -1082,6 +1574,7 @@ function render(){
   else if(state.activeTab==="tax") tabHtml=renderTax(d);
   else if(state.activeTab==="insights") tabHtml=renderInsights(d);
   else if(state.activeTab==="compare") tabHtml=renderCompare(d);
+  else if(state.activeTab==="export") tabHtml=renderExport(d);
   document.getElementById("tabcontent").innerHTML=tabHtml;
 
   if(state.activeTab==="growth"){
@@ -1095,6 +1588,13 @@ function render(){
       series=[{key:"cashValue",name:"Portfolio value",color:"#6FBE8F"},{key:"cashCostBase",name:"Cumulative contributed",color:"#7FA8D9",dash:true}];
     }
     renderLineChart("chartContainer", d.chartData, series);
+  }
+
+  if(state.activeTab==="export"){
+    var previewFrame=document.getElementById("reportPreview");
+    if(previewFrame){
+      try{ previewFrame.srcdoc = buildReportDocumentHTML(assembleReportData(d)); }catch(e){ /* preview is best-effort, export buttons still work independently */ }
+    }
   }
 
   // restore focus/cursor to whatever field the user was mid-typing in, so the on-screen keyboard
