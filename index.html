@@ -167,6 +167,23 @@ var STOCK_DB = {
 };
 var GENERIC_DEFAULT = {name:"Unrecognised ticker", yieldCash:3, yieldGrossed:3.5, growth:6, mer:0.2, isETF:null, note:"Placeholder figures — edit these"};
 
+/* Newest first. Kept short and plain-language, this is for anyone opening the page, not a commit log. */
+var CHANGELOG = [
+  {version:"v8", date:"9 Aug 2026", items:[
+    "New: Save & Load tab, save your whole plan to a file and load it back in later, plus an optional reminder to save",
+    "New: one-way CSV export of just the holdings table, for opening in Excel/Sheets",
+    "New: Verify links on every holding, straight to the correct ASX quote page",
+    "Expanded the built-in ticker list from 11 to 30, including the high-yield ETFs under comparison (SYI, IHD, HVST, YMAX, HYLD)",
+    "Fixed table spacing and made the Print/Save-as-PDF button more reliable on mobile"
+  ]},
+  {version:"v1–v7", date:"24 Jul 2026", items:[
+    "Built the core multi-stock dividend & FIRE projection engine, with reinvested dividends and broker fees",
+    "Added reallocation planning, scenario comparison, and a standalone compounding what-if calculator",
+    "Added Australian dividend tax and CGT modelling, including the 2026 Budget reform comparison",
+    "Added the adviser-ready export report (print/PDF and PNG/JPEG)"
+  ]}
+];
+
 /* Builds a link to the ASX quote page for a ticker. ASX splits its site into two separate templates:
    /markets/etp/{code} for ETFs and other exchange-traded products, /markets/company/{code} for
    individual companies. There's no single URL that resolves both, and getting it wrong returns a
@@ -221,11 +238,11 @@ function incomeTax(taxableIncome, ruleYear){
 
 var state = {
   stocks: [
-    {id:1, ticker:"VAS", name:STOCK_DB.VAS.name, balance:10000, yieldCash:4, yieldGrossed:5.7, growth:4.5, mer:0.07, color:PALETTE[0], isETF:true},
-    {id:2, ticker:"VGS", name:STOCK_DB.VGS.name, balance:10000, yieldCash:2, yieldGrossed:2, growth:7, mer:0.18, color:PALETTE[1], isETF:true}
+    {id:1, ticker:"VAS", name:STOCK_DB.VAS.name, balance:69978, yieldCash:4, yieldGrossed:5.7, growth:4.5, mer:0.07, color:PALETTE[0], isETF:true},
+    {id:2, ticker:"VGS", name:STOCK_DB.VGS.name, balance:92171, yieldCash:2, yieldGrossed:2, growth:7, mer:0.18, color:PALETTE[1], isETF:true}
   ],
   broker:{id:"pearler", buyFee:BROKER_DB.pearler.buyFee, sellFee:BROKER_DB.pearler.sellFee},
-  monthlyContribution:1000,
+ monthlyContribution:1000,
   currentAge:25,
   inflation:3,
   adjustInflation:true,
@@ -246,6 +263,10 @@ var state = {
     sellStockId:null,   // set on init
     sellPercent:100,
     sellAge:50
+  },
+  saveReminder:{
+    enabled:false,
+    minutes:15
   }
 };
 state.tax.sellStockId = state.stocks[0].id;
@@ -715,7 +736,7 @@ function field(label, name, value, suffix, onchange, step){
     '</div></label>';
 }
 
-var TABS=[["summary","Summary"],["holdings","Holdings & Contributions"],["growth","Growth & Compounding"],["tax","Tax & CGT"],["insights","Insights"],["compare","Compare Scenarios"],["export","Export Report"]];
+var TABS=[["summary","Summary"],["save","Save & Load"],["holdings","Holdings & Contributions"],["growth","Growth & Compounding"],["tax","Tax & CGT"],["insights","Insights"],["compare","Compare Scenarios"],["export","Export Report"]];
 
 function renderNav(){
   return '<nav class="tabs">'+TABS.map(function(t){
@@ -1538,6 +1559,218 @@ function renderExport(d){
   return h;
 }
 
+/* ============================== SAVE / LOAD / CSV ============================== */
+/* Everything below keeps the calculator's core promise intact: it never stores or sends anything
+   on its own. All of this only happens when the user explicitly clicks Save or Load. Nothing here
+   runs automatically except the reminder banner, which is just a visible nudge, not a background
+   write, since a true silent autosave-to-disk isn't available on the mobile browsers this is
+   actually used on (only desktop Chrome/Edge support the underlying File System Access API). */
+
+var SAVE_FORMAT = "dividend-fire-calculator-save";
+var SAVE_VERSION = 1;
+var supportsFilePicker = (typeof window.showSaveFilePicker === "function");
+var savedFileHandle = null;      // in-memory only for this tab session, never persisted
+var lastSavedSnapshot = null;    // JSON string of state at last successful save/load, used to detect unsaved changes
+var lastSavedAt = null;          // Date of last successful save/load
+var reminderTimerId = null;
+var showReminderBanner = false;
+var showResumeBanner = true;
+var showChangelog = false;
+function toggleChangelog(){ showChangelog=!showChangelog; render(); }
+window.toggleChangelog=toggleChangelog;
+
+function renderChangelog(){
+  var latest=CHANGELOG[0];
+  var h='<div class="privacy" style="background:#10161F;border-color:#26333F;color:#AAB8C4;">'+
+    '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">'+
+      '<span><b>Last updated '+esc(latest.date)+'</b> ('+esc(latest.version)+')</span>'+
+      '<button class="btn small" onclick="toggleChangelog()">'+(showChangelog?"Hide":"What\u2019s new")+'</button>'+
+    '</div>'+
+    (showChangelog ? CHANGELOG.map(function(entry){
+      return '<div style="margin-top:10px;"><div style="font-size:10.5px;color:#7E93A3;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px;">'+esc(entry.version)+' \u2014 '+esc(entry.date)+'</div>'+
+        '<ul style="margin:0;padding-left:18px;font-size:11.5px;line-height:1.6;">'+entry.items.map(function(it){return '<li>'+esc(it)+'</li>';}).join("")+'</ul></div>';
+    }).join("") : '')+
+  '</div>';
+  return h;
+}
+
+function saveableStateSnapshot(){
+  return {
+    stocks: state.stocks, broker: state.broker, monthlyContribution: state.monthlyContribution,
+    currentAge: state.currentAge, inflation: state.inflation, adjustInflation: state.adjustInflation,
+    targetDividend: state.targetDividend, targetAge: state.targetAge, yieldView: state.yieldView,
+    contribMode: state.contribMode, customSequence: state.customSequence, reallocAge: state.reallocAge,
+    reallocTargets: state.reallocTargets, scenarios: state.scenarios, tax: state.tax,
+    saveReminder: state.saveReminder
+  };
+}
+function buildSaveObject(){
+  return {_type:SAVE_FORMAT, _version:SAVE_VERSION, savedAt:new Date().toISOString(), data:saveableStateSnapshot()};
+}
+function isDirtySinceLastSave(){
+  if(lastSavedSnapshot===null) return true; // never saved or loaded this session
+  return JSON.stringify(saveableStateSnapshot())!==lastSavedSnapshot;
+}
+function markSaved(){
+  lastSavedSnapshot=JSON.stringify(saveableStateSnapshot());
+  lastSavedAt=new Date();
+  showReminderBanner=false;
+}
+function pad2(n){ return n<10?"0"+n:""+n; }
+function dateStamp(){ var d=new Date(); return d.getFullYear()+"-"+pad2(d.getMonth()+1)+"-"+pad2(d.getDate()); }
+
+function triggerBlobDownload(content, filename, mime){
+  var blob=new Blob([content], {type:mime});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement("a");
+  a.href=url; a.download=filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(function(){ URL.revokeObjectURL(url); }, 3000);
+}
+
+function downloadSaveFile(){
+  var text=JSON.stringify(buildSaveObject(), null, 2);
+  triggerBlobDownload(text, "dividend-fire-plan-"+dateStamp()+".json", "application/json");
+  markSaved();
+  render();
+}
+async function saveWithPicker(){
+  try{
+    if(!savedFileHandle){
+      savedFileHandle = await window.showSaveFilePicker({
+        suggestedName:"dividend-fire-plan-"+dateStamp()+".json",
+        types:[{description:"Dividend & FIRE plan (JSON)", accept:{"application/json":[".json"]}}]
+      });
+    }
+    var writable = await savedFileHandle.createWritable();
+    await writable.write(JSON.stringify(buildSaveObject(), null, 2));
+    await writable.close();
+    markSaved();
+    render();
+  }catch(e){
+    if(e && e.name==="AbortError") return; // user closed the picker, not an error
+    savedFileHandle=null;
+    alert("Couldn't save to that file, falling back to a normal download instead.\n\n"+(e&&e.message?e.message:e));
+    downloadSaveFile();
+  }
+}
+function saveNow(){
+  if(supportsFilePicker) saveWithPicker(); else downloadSaveFile();
+}
+
+function applySaveObject(obj){
+  if(!obj || obj._type!==SAVE_FORMAT || !obj.data) throw new Error("This doesn't look like a saved plan from this calculator.");
+  var d=obj.data;
+  ["stocks","broker","monthlyContribution","currentAge","inflation","adjustInflation","targetDividend","targetAge",
+   "yieldView","contribMode","customSequence","reallocAge","reallocTargets","scenarios","tax","saveReminder"].forEach(function(k){
+    if(d[k]!==undefined) state[k]=d[k];
+  });
+  if(!state.saveReminder) state.saveReminder={enabled:false, minutes:15};
+  compState=null; // recompute the standalone compounding calculator defaults from the newly-loaded numbers
+  showResumeBanner=false;
+  markSaved();
+  scheduleReminderCheck();
+  render();
+}
+function handleLoadFileChange(inputEl){
+  var file = inputEl.files && inputEl.files[0];
+  if(!file){ return; }
+  var reader=new FileReader();
+  reader.onload=function(e){
+    var loadedAt="an earlier session";
+    try{
+      var obj=JSON.parse(e.target.result);
+      if(obj && obj.savedAt) loadedAt=new Date(obj.savedAt).toLocaleString("en-AU");
+      applySaveObject(obj);
+      alert("Loaded your saved plan from "+loadedAt+".");
+    }catch(err){
+      alert("Couldn't load that file: "+(err&&err.message?err.message:"it doesn't look like a saved plan from this calculator."));
+    }
+    inputEl.value=""; // reset so picking the same file again still fires the change event
+  };
+  reader.onerror=function(){ alert("Couldn't read that file."); inputEl.value=""; };
+  reader.readAsText(file);
+}
+function triggerLoadPicker(){
+  var el=document.getElementById("loadFileInput");
+  if(el) el.click();
+}
+function csvEscape(v){
+  v = v==null ? "" : String(v);
+  if(/[",\n]/.test(v)) v = '"'+v.replace(/"/g,'""')+'"';
+  return v;
+}
+function downloadHoldingsCsv(){
+  var rows=[["Ticker","Name","Balance","Cash yield %","Grossed-up yield %","Growth %","MER %"]];
+  state.stocks.forEach(function(s){ rows.push([s.ticker, s.name, s.balance, s.yieldCash, s.yieldGrossed, s.growth, s.mer||0]); });
+  var text = rows.map(function(r){ return r.map(csvEscape).join(","); }).join("\r\n");
+  triggerBlobDownload(text, "dividend-fire-holdings-"+dateStamp()+".csv", "text/csv");
+}
+
+function scheduleReminderCheck(){
+  if(reminderTimerId){ clearInterval(reminderTimerId); reminderTimerId=null; }
+  if(state.saveReminder.enabled){
+    var ms=Math.max(1,state.saveReminder.minutes)*60*1000;
+    reminderTimerId=setInterval(function(){
+      if(isDirtySinceLastSave()){ showReminderBanner=true; render(); }
+    }, ms);
+  }
+}
+function setReminderEnabled(checked){
+  state.saveReminder.enabled=checked;
+  scheduleReminderCheck();
+  render();
+}
+function setReminderMinutes(value){
+  var n=parseInt(value,10);
+  state.saveReminder.minutes = isFinite(n) && n>0 ? n : 15;
+  scheduleReminderCheck();
+  render();
+}
+function dismissReminderBanner(){ showReminderBanner=false; render(); }
+function dismissResumeBanner(){ showResumeBanner=false; render(); }
+
+window.addEventListener("beforeunload", function(e){
+  if(isDirtySinceLastSave()){ e.preventDefault(); e.returnValue=""; return ""; }
+});
+
+["saveNow","triggerLoadPicker","handleLoadFileChange","downloadHoldingsCsv","setReminderEnabled",
+ "setReminderMinutes","dismissReminderBanner","dismissResumeBanner"].forEach(function(name){ window[name]=eval(name); });
+
+function renderSaveLoad(){
+  var h='<div class="card"><h2>Save your progress '+helpBtn("h-save")+'</h2>'+
+    helpBox("h-save","This calculator still never stores or sends anything on its own, closing the tab wipes it exactly like before. What's new is a way to take a snapshot with you: Save writes everything currently set up on this page, every holding, all your plan settings, scenarios and tax inputs, into one file you keep yourself. Load reads that file straight back in so you can pick up exactly where you left off. "+(supportsFilePicker?"Your browser supports choosing exactly where that file goes and saving back to it directly.":"Your browser will save it to your normal downloads location, like the PDF/PNG export above, there's no way to choose a folder on this browser.")+"</div>")+
+    '<div class="grid2" style="margin-bottom:10px;">'+
+      '<button class="btn primary" onclick="saveNow()">\ud83d\udcbe '+(supportsFilePicker?"Save (choose location)":"Save progress")+'</button>'+
+      '<button class="btn" onclick="triggerLoadPicker()">\ud83d\udcc2 Load a saved file</button>'+
+    '</div>'+
+    '<div style="font-size:11.5px;color:#8593A3;">'+
+      (lastSavedAt ? "Last saved "+lastSavedAt.toLocaleString("en-AU")+"." : "Not saved yet this session.")+
+      ' '+(isDirtySinceLastSave() ? '<span style="color:#D9A441;">You have changes since then.</span>' : '<span style="color:#6FBE8F;">Everything is saved.</span>')+
+    '</div>'+
+  '</div>';
+
+  h+='<div class="card"><h2>Save reminders '+helpBtn("h-remind")+'</h2>'+
+    helpBox("h-remind","This is a reminder, not a background save, browsers on mobile don't allow a page to silently write to a file in the background, so instead this checks periodically whether you've made changes since your last save and, if so, shows a small banner nudging you to save. It never saves anything by itself.")+
+    '<label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:'+(state.saveReminder.enabled?"10":"0")+'px;">'+
+      '<input type="checkbox" '+(state.saveReminder.enabled?"checked":"")+' onchange="setReminderEnabled(this.checked)"/> Remind me to save periodically'+
+    '</label>'+
+    (state.saveReminder.enabled ? (
+      '<label class="field" style="max-width:220px;">Remind me every'+
+        '<select onchange="setReminderMinutes(this.value)" style="background:#0F1720;border:1px solid #26333F;border-radius:6px;color:#EAF1F6;padding:6px 8px;">'+
+          [5,10,15,30,60].map(function(m){ return '<option value="'+m+'" '+(state.saveReminder.minutes===m?"selected":"")+'>'+m+' minutes</option>'; }).join("")+
+        '</select></label>'
+    ) : '')+
+  '</div>';
+
+  h+='<div class="card"><h2>Export holdings as CSV '+helpBtn("h-csv")+'</h2>'+
+    helpBox("h-csv","A simple spreadsheet-friendly export of just the holdings table, ticker, balance, yields, growth and MER, for opening in Excel or Google Sheets. This is one-way, it's for viewing/sharing your holdings elsewhere, not for loading back into the calculator, use the Save file above for that since a CSV can't hold the plan settings, scenarios and tax inputs cleanly.")+
+    '<button class="btn" onclick="downloadHoldingsCsv()">\ud83d\udcc4 Download holdings as CSV</button>'+
+  '</div>';
+
+  return h;
+}
+
 /* ============================== MAIN RENDER ============================== */
 
 function render(){
@@ -1559,8 +1792,26 @@ function render(){
     '<div class="sub">A planning and education tool for reaching a target dividend income: growth, tax and CGT included. Add what you hold, set your plan, and everything updates.</div></div>'+
     '<div class="disclaimer">Planning &amp; education tool, not financial, tax or legal advice. Yield, growth and tax figures are assumptions and simplifications, not guarantees.</div></header>';
   html+='<div class="privacy">I built this for my own financial independence, retire early (FIRE) planning and figured others might find it useful. <b>It\'s free, runs entirely in your browser, nothing you enter is stored or sent anywhere, no server, no database.</b> Close the tab and it\'s gone unless you save your own copy of this file. This calculator is for general information, not financial advice, check with an accountant before making any decisions.</div>';
+  html+=renderChangelog();
+  if(showResumeBanner){
+    html+='<div class="privacy" style="background:#141B10;border-color:#3A4A2A;color:#D8E3C8;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">'+
+      '<span>Picking up from a saved plan? Load the file you saved last time to continue exactly where you left off.</span>'+
+      '<span style="display:flex;gap:8px;flex-shrink:0;">'+
+        '<button class="btn small primary" onclick="triggerLoadPicker()">Load a saved file</button>'+
+        '<button class="btn small" onclick="dismissResumeBanner()">Start fresh</button>'+
+      '</span></div>';
+  }
+  if(showReminderBanner){
+    html+='<div class="privacy" style="background:#241C10;border-color:#4A3A2A;color:#E3D3B8;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">'+
+      '<span>It\'s been '+state.saveReminder.minutes+' minutes since your last save, and you\'ve made changes.</span>'+
+      '<span style="display:flex;gap:8px;flex-shrink:0;">'+
+        '<button class="btn small primary" onclick="saveNow()">Save now</button>'+
+        '<button class="btn small" onclick="dismissReminderBanner()">Dismiss</button>'+
+      '</span></div>';
+  }
   html+='<div class="support"><div class="stext">Built and shared for free by a fellow FIRE-chaser. If it saved you some spreadsheet time, feel free to <b>buy me a tea (not a coffee drinker)</b>, totally optional. I also use <b>Pearler</b> for my own ETF buys - if you are after a broker, the link below is a referral (we both get a small bonus if you sign up through it and start trading, just being up-front.</div><div class="sbuttons"><a class="sbtn kofi" href="https://ko-fi.com/jordanscruffy" target="_blank" rel="noopener noreferrer">☕ Buy me a tea</a><a class="sbtn pearler" href="https://mobile.pearler.com/invited/JORDAN63178" target="_blank" rel="noopener noreferrer">📈 Try Pearler (referral)</a></div></div>';
   html+=renderSettingsBar();
+  html+='<input type="file" id="loadFileInput" accept="application/json,.json" style="display:none" onchange="handleLoadFileChange(this)"/>';
   html+=renderNav();
   html+='<div id="tabcontent"></div>';
   html+='<footer class="foot">All figures are projections based on assumptions you control above, not guarantees. Brokerage fees and fund management fees (MER) are rough, editable estimates, not live pricing, always confirm with your broker and the fund\'s PDS. Tax and CGT figures use a simplified average-cost-base model against the rules legislated in the 2026 Federal Budget (Royal Assent 26 Jun 2026) and are for education, not advice. Always confirm with a licensed accountant, financial adviser, or the ATO before acting.</footer>';
@@ -1569,6 +1820,7 @@ function render(){
 
   var tabHtml;
   if(state.activeTab==="summary") tabHtml=renderSummary(d);
+  else if(state.activeTab==="save") tabHtml=renderSaveLoad();
   else if(state.activeTab==="holdings") tabHtml=renderHoldings(d);
   else if(state.activeTab==="growth") tabHtml=renderGrowth(d);
   else if(state.activeTab==="tax") tabHtml=renderTax(d);
@@ -1626,6 +1878,9 @@ function render(){
 }
 
 /* ============================== INIT ============================== */
+lastSavedSnapshot=JSON.stringify(saveableStateSnapshot()); // treat the starting state as the baseline, so the
+                                                             // unsaved-changes warning only fires after a real edit
+scheduleReminderCheck();
 render();
 
 })();
